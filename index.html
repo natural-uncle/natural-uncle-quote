@@ -270,12 +270,12 @@
   <!-- 🔹 備註與保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
   <ol>
-    <li>請於確認本報價內容無誤後，以訊息方式回覆，以利後續安排作業。</li>
+    <li>請於確認本報價內容無誤後，以按下「我同意此報價」按鈕回覆，以利後續安排作業。</li>
     <li>施作過程歡迎您全程在場參與，確保施工過程透明、保障雙方權益。</li>
     <li>施作前皆會進行基本功能檢測，確認機況正常後再進行清洗保養作業。</li>
     <li>施作如有拍攝照片或影片，可免費提供給您做為紀錄與備存參考。</li>
     <li>本服務享有14天保固期，如有異常使用狀況，請立即回報，我們將安排專人處理（※保固不包含因安裝不良或零件自然老化所導致之問題）。</li>
-    <li>若您有任何疑問或需進一步協助，歡迎直接聯繫服務窗口，或掃描報價單右下角之 LINE 官方帳號 QR Code，我們將誠摯為您服務。</li>
+    <li>若您有任何疑問或需進一步協助，歡迎直接點及下方窗口，直接 LINE 官方帳號，我們將誠摯為您服務。</li>
   </ol>
 
   <!-- 🔹 聯絡資訊 + 社群 -->
@@ -500,7 +500,7 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
 });
 
 /* ===============================
-   D. 「我同意此報價」提交（行動版快捷鍵可用；桌機已移除按鈕）
+   D. 「我同意此報價」提交（成功後封存連結＋長訊息）
    =============================== */
 async function handleConfirmSubmit(clickedBtn){
   if (clickedBtn && clickedBtn.disabled) return;
@@ -512,9 +512,13 @@ async function handleConfirmSubmit(clickedBtn){
     }
 
     const payload = collectShareData();
+
+    // 若連結來自 #cid=...，帶上 cloudinaryId（方便後端對帳/封存）
     const hash = location.hash || "";
+    let cid = null;
     if (hash.startsWith("#cid=")) {
-      payload.cloudinaryId = decodeURIComponent(hash.replace("#cid=",""));
+      cid = decodeURIComponent(hash.replace("#cid=",""));
+      payload.cloudinaryId = cid;
     }
 
     const res = await fetch("/api/confirm", {
@@ -534,7 +538,10 @@ async function handleConfirmSubmit(clickedBtn){
     }
 
     await res.json();
-    alert("✅ 感謝您的確認，我們明日見囉！😊
+
+    // ✅ 成功訊息（你的新版說明）
+    alert(
+`✅ 感謝您的確認，我們明日見囉！😊
 為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
 
 若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
@@ -544,11 +551,28 @@ async function handleConfirmSubmit(clickedBtn){
 
 如有異動也歡迎提前與我們聯繫，謝謝您配合！
 
-— 自然大叔 敬上");
-    if (clickedBtn){
-      clickedBtn.textContent = "已送出同意";
-      clickedBtn.disabled = true; // 保持鎖住
+— 自然大叔 敬上`
+    );
+
+    // ⛔️ 立刻封存此連結（雲端鎖定）
+    if (cid) {
+      try{
+        await fetch("/api/lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: cid })
+        });
+      }catch(e){ /* 即使鎖定失敗，也不阻擋流程 */ }
     }
+
+    // 前端立即把操作按鈕藏起來，避免重複送出
+    const btnConfirmM = document.getElementById("confirmBtnMobile");
+    if (btnConfirmM) { btnConfirmM.textContent = "已送出同意"; btnConfirmM.disabled = true; }
+    const btnShareDesk = document.getElementById("shareLinkBtn");
+    if (btnShareDesk) btnShareDesk.style.display = "none";
+    const btnShareM = document.getElementById("shareLinkBtnMobile");
+    if (btnShareM) btnShareM.style.display = "none";
+
   }catch(err){
     console.error(err);
     alert("送出失敗，請稍後再試。");
@@ -604,7 +628,6 @@ async function handleShareClick(){
         if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(link);
         } else {
-          // 退而求其次
           const ta = document.createElement('textarea');
           ta.value = link; document.body.appendChild(ta);
           ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
@@ -658,10 +681,10 @@ function collectShareData(){
 }
 
 /* ===============================
-   F. 唯讀模式載入
+   F. 唯讀模式載入（支援封存狀態）
    - 支援 #cid=... （走 /api/view 讀 Cloudinary）
    - 兼容舊的 #data=... 直接還原
-   - 唯讀時：隱藏「新增項目」「產生連結（桌機＋手機）」
+   - 唯讀或封存時：隱藏「新增項目」「產生連結（桌機＋手機）」「行動版同意按鈕」
    =============================== */
 (async function loadReadOnlyIfHash(){
   const hash = location.hash || "";
@@ -673,14 +696,18 @@ function collectShareData(){
       const r = await fetch(`/api/view?id=${encodeURIComponent(cid)}`);
       if(!r.ok) throw new Error(await r.text());
       const data = await r.json();
-      applyReadOnlyData(data);
+
+      applyReadOnlyData(data);      // 仍然把資料灌進去（唯讀）
       applyMobileLabels();
+      if (data.locked) showLockedNotice();  // ⛔️ 顯示封存提示並隱藏交互
+
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
-      alert("讀取分享資料失敗，請確認連結是否正確。");
-      updateTotals();
-      applyMobileLabels();
+      alert("此連結已失效或資料讀取失敗。");
+      // 進入「安全唯讀」：把所有欄位鎖起來、隱藏按鈕
+      forceReadOnlyBlank();
+      showLockedNotice();
       return;
     }
   }
@@ -708,9 +735,7 @@ function collectShareData(){
 function applyReadOnlyData(data){
   // 頂部資訊（保持原字樣）
   if(data.quoteInfo){
-    // 若從舊資料帶回完整字串，直接塞回；保留行動版換行的 CSS 行為
     const qi = document.getElementById("quoteInfo");
-    // 嘗試拆分
     const m = data.quoteInfo.match(/承辦項目：([^｜\s]+).*?報價日期：(\d{4}\/\d{2}\/\d{2})/);
     if (m){
       qi.innerHTML = `
@@ -752,14 +777,32 @@ function applyReadOnlyData(data){
   document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
   document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
 
-  // 唯讀：隱藏「新增項目」與「產生連結」（桌機＋手機）
-  document.getElementById("addRow").style.display = "none";
-  const shareBtn = document.getElementById("shareLinkBtn");
-  if (shareBtn) shareBtn.style.display = "none";
-  const shareBtnMobile = document.getElementById("shareLinkBtnMobile");
-  if (shareBtnMobile) shareBtnMobile.style.display = "none";
+  // 唯讀：隱藏「新增項目」與「產生連結」（桌機＋手機）與「行動版同意」
+  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile"];
+  ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 
   updateTotals();
+}
+
+// 顯示封存提示並隱藏所有交互按鈕（雙重保險）
+function showLockedNotice(){
+  const box = document.createElement('div');
+  box.className = 'alert alert-success mt-2';
+  box.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
+  document.querySelector('.container-quote').prepend(box);
+
+  const ids = ["shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile","addRow"];
+  ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
+}
+
+// 極端情況（資料壞掉）下的純唯讀空白狀態
+function forceReadOnlyBlank(){
+  document.querySelectorAll("input, textarea, select").forEach(el=>{
+    if (el.tagName === "SELECT") el.setAttribute("disabled", true);
+    else el.setAttribute("readonly", true);
+  });
+  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile"];
+  ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
 </script>
 </body>
