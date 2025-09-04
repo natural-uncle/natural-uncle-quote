@@ -534,7 +534,17 @@ async function handleConfirmSubmit(clickedBtn){
     }
 
     await res.json();
-    alert("✅ 已送出同意！感謝您的察看，此將留存紀錄");
+    alert("✅ 感謝您的確認，我們明日見囉！😊
+為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
+
+若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
+・大型衣櫃、書櫃等重物
+・無法移動之床或沙發
+・其他無法暫移之家具
+
+如有異動也歡迎提前與我們聯繫，謝謝您配合！
+
+— 自然大叔 敬上");
     if (clickedBtn){
       clickedBtn.textContent = "已送出同意";
       clickedBtn.disabled = true; // 保持鎖住
