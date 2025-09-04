@@ -530,7 +530,7 @@ function collectShareData(){
 
     try{
       // 加上 cache-buster，避免任何中間層快取
-      const r = await fetch(`/api/view?id=${encodeURIComponent(cid)}&ts=${Date.now()}`, { cache:"no-store" });
+      const r = await fetch(`/.netlify/functions/view?id=${encodeURIComponent(cid)}&ts=${Date.now()}`, { cache:"no-store" });
       if(!r.ok) throw new Error(await r.text());
       const data = await r.json();
       applyReadOnlyData(data); applyMobileLabels();
