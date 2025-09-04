@@ -245,22 +245,9 @@ document.getElementById("cleanTime").addEventListener("change", updateCleanFull)
 
 /* ===============================
    C. 自動帶價 + 優惠規則 + 手動覆寫
-   規則依你的定義：
-   - 冷氣清洗 分離式：<3 台 → 1800/台；>=3 台 → 1500/台（依「該列」數量）
-   - 冷氣清洗 吊隱式：2800/台
-   - 洗衣機清洗 直立式：若任一列有「冷氣清洗」→ 1800；否則 2000
-   - 防霉處理：<5 台 → 300/台；>=5 台 → 250/台
-   - 臭氧殺菌：<5 台 → 200/台；>=5 台 → 150/台
-   - 變形金剛機型：500/台；一體式水盤機型：500/台；超長費用：300/台
-   - 水塔清洗：若任一列有「自來水管清洗」→ 800/顆；否則 1000/顆
-   - 自來水管清洗：手動輸入
-   手動改價：在該列「單價」輸入框輸入 → 設定 data-override="true"，不再被規則覆蓋
-   若更動（服務/補充/數量）→ 移除覆寫旗標，回到自動帶價
    =============================== */
 function updateTotals(){
   let total = 0;
-
-  // 先掃一輪，判斷全表是否「存在冷氣清洗」與「存在自來水管清洗」
   let hasAC = false, hasPipe = false;
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const s = tr.querySelector(".service")?.value || "";
@@ -268,7 +255,6 @@ function updateTotals(){
     if(s === "自來水管清洗") hasPipe = true;
   });
 
-  // 逐列計算
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const service = tr.querySelector(".service")?.value || "";
     const option  = tr.querySelector(".option")?.value  || "";
@@ -280,11 +266,9 @@ function updateTotals(){
     const qty = Math.max(1, Number(qtyEl?.value || 1));
     let price = Number(priceEl?.value || 0);
 
-    // 清空優惠提示
-    if(noteEl) noteEl.textContent = "";
-
-    // 若尚未手動覆寫，套用自動定價規則
+    if(noteEl) noteEl.textContent = ""; // 清空優惠提示
     const overridden = priceEl?.dataset.override === "true";
+
     if(!overridden){
       if(service === "冷氣清洗" && option.includes("分離式")){
         price = (qty >= 3) ? 1500 : 1800;
@@ -310,7 +294,6 @@ function updateTotals(){
         price = hasPipe ? 800 : 1000;
         if(hasPipe && noteEl) noteEl.textContent = "已套用自來水管清洗優惠價";
       }
-      // 自來水管清洗 → 手動輸入，不自動變動
       if(priceEl) priceEl.value = price; // 同步到畫面
     }
 
@@ -322,7 +305,6 @@ function updateTotals(){
   document.getElementById("total").textContent = String(total);
 }
 
-// 事件委派：改服務/補充/數量 → 解除覆寫、重算
 document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
   if(e.target.classList.contains("service") || e.target.classList.contains("option") || e.target.classList.contains("qty")){
     const rowPrice = e.target.closest("tr").querySelector(".price");
@@ -331,7 +313,6 @@ document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
   }
 });
 
-// 手動輸入單價 → 設覆寫旗標，並重算
 document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
   if(e.target.classList.contains("price")){
     e.target.dataset.override = "true";
@@ -341,7 +322,6 @@ document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
   }
 });
 
-// 新增/刪除列
 document.getElementById("addRow").addEventListener("click", ()=>{
   const tbody = document.querySelector("#quoteTable tbody");
   const tr = document.createElement("tr");
@@ -398,16 +378,11 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
    =============================== */
 document.getElementById("confirmBtn").addEventListener("click", async ()=>{
   try{
-    // 用你頁面既有的序列化函式，把畫面資料收集成 JSON
     const payload = collectShareData();
-
-    // 若此頁是從 Cloudinary 分享連結打開（#cid=...），順手帶上 public_id 方便對帳
     const hash = location.hash || "";
     if (hash.startsWith("#cid=")) {
       payload.cloudinaryId = decodeURIComponent(hash.replace("#cid=",""));
     }
-
-    // 送到 Netlify 的 Serverless API（我們在 netlify.toml 已把路由指到 confirm.js）
     const res = await fetch("/api/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -429,15 +404,31 @@ document.getElementById("confirmBtn").addEventListener("click", async ()=>{
 });
 
 /* ===============================
-   E. 產生分享連結（hash + JSON）
-   - 將目前所有欄位序列化，組成長網址 #data=...
+   E. 產生分享連結（Cloudinary 短代碼 #cid=...）
    =============================== */
-document.getElementById("shareLinkBtn").addEventListener("click", ()=>{
-  const payload = collectShareData();
-  const longUrl = `${location.origin}${location.pathname}#data=${encodeURIComponent(JSON.stringify(payload))}`;
-  const box = document.getElementById("shareLinkBox");
-  box.classList.remove("d-none");
-  box.innerHTML = `<b>專屬報價單網址：</b><br><a href="${longUrl}" target="_blank">${longUrl}</a>`;
+document.getElementById("shareLinkBtn").addEventListener("click", async ()=>{
+  try{
+    const payload = collectShareData();
+    const res = await fetch("/api/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok){
+      const t = await res.text();
+      alert("產生連結失敗：" + t);
+      return;
+    }
+
+    const data = await res.json();
+    const box = document.getElementById("shareLinkBox");
+    box.classList.remove("d-none");
+    box.innerHTML = `<b>專屬報價單網址：</b><br><a href="${data.share_url}" target="_blank">${data.share_url}</a>`;
+  }catch(err){
+    console.error(err);
+    alert("產生連結失敗，請稍後再試。");
+  }
 });
 
 function collectShareData(){
@@ -453,7 +444,7 @@ function collectShareData(){
     });
   });
   return {
-    quoteInfo: document.getElementById("quoteInfo").textContent, // 承辦項目＋報價日期（純文字）
+    quoteInfo: document.getElementById("quoteInfo").textContent,
     customer:  document.getElementById("customerName").value,
     phone:     document.getElementById("customerPhone").value,
     address:   document.getElementById("customerAddress").value,
@@ -467,57 +458,86 @@ function collectShareData(){
 }
 
 /* ===============================
-   F. 唯讀模式載入（客戶點開連結）
-   - 偵測 URL 是否帶 #data=...，若是則還原資料
-   - 將所有輸入/選單設為唯讀/停用
-   - 隱藏新增列與產生連結按鈕（保留確認按鈕）
+   F. 唯讀模式載入
+   - 支援 #cid=... （走 /api/view 讀 Cloudinary）
+   - 兼容舊的 #data=... 直接還原
    =============================== */
-(function loadReadOnlyIfHash(){
-  if(!location.hash.startsWith("#data=")) { updateTotals(); return; }
-  try{
-    const data = JSON.parse(decodeURIComponent(location.hash.replace("#data=","")));
-    // 頂部資訊
-    if(data.quoteInfo) document.getElementById("quoteInfo").textContent = data.quoteInfo;
-    // 基本欄位
-    document.getElementById("customerName").value   = data.customer  || "";
-    document.getElementById("customerPhone").value  = data.phone     || "";
-    document.getElementById("customerAddress").value= data.address   || "";
-    document.getElementById("technicianName").value = data.technician|| "";
-    document.getElementById("technicianPhone").value= data.techPhone || "";
-    document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
-    document.getElementById("otherNotes").value     = data.otherNotes|| "";
+(async function loadReadOnlyIfHash(){
+  const hash = location.hash || "";
 
-    // 重建表格
-    const tbody = document.querySelector("#quoteTable tbody");
-    tbody.innerHTML = "";
-    (data.items || []).forEach(it=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><select class="form-select service" disabled><option>${it.service||""}</option></select></td>
-        <td><select class="form-select option" disabled><option>${it.option||""}</option></select></td>
-        <td><input type="number" class="form-control qty" value="${it.qty||1}" readonly /></td>
-        <td><input type="number" class="form-control price" value="${it.price||0}" readonly /><small class="discount-note"></small></td>
-        <td class="subtotal">${it.subtotal||0}</td>
-        <td></td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    // 鎖定所有輸入（唯讀）
-    document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
-    document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
-
-    // 隱藏新增/分享按鈕（客戶只需查看與同意）
-    document.getElementById("addRow").style.display = "none";
-    document.getElementById("shareLinkBtn").style.display = "none";
-
-    // 更新總價（以載入的小計或重新計算都可，這裡採重新計算以一致性）
-    updateTotals();
-  }catch(err){
-    console.error("讀取分享資料失敗：", err);
-    updateTotals();
+  // A) 新方式：#cid=短代碼
+  if (hash.startsWith("#cid=")) {
+    try{
+      const cid = decodeURIComponent(hash.replace("#cid=",""));
+      const r = await fetch(`/api/view?id=${encodeURIComponent(cid)}`);
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      applyReadOnlyData(data);
+      return;
+    }catch(e){
+      console.error("讀取分享資料失敗：", e);
+      alert("讀取分享資料失敗，請確認連結是否正確。");
+      updateTotals();
+      return;
+    }
   }
+
+  // B) 舊方式：#data=...
+  if (hash.startsWith("#data=")) {
+    try{
+      const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
+      applyReadOnlyData(data);
+      return;
+    }catch(err){
+      console.error("讀取分享資料失敗：", err);
+      updateTotals();
+      return;
+    }
+  }
+
+  // C) 無 hash → 編輯模式
+  updateTotals();
 })();
+
+function applyReadOnlyData(data){
+  // 頂部資訊
+  if(data.quoteInfo) document.getElementById("quoteInfo").textContent = data.quoteInfo;
+  // 基本欄位
+  document.getElementById("customerName").value   = data.customer  || "";
+  document.getElementById("customerPhone").value  = data.phone     || "";
+  document.getElementById("customerAddress").value= data.address   || "";
+  document.getElementById("technicianName").value = data.technician|| "";
+  document.getElementById("technicianPhone").value= data.techPhone || "";
+  document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
+  document.getElementById("otherNotes").value     = data.otherNotes|| "";
+
+  // 重建表格
+  const tbody = document.querySelector("#quoteTable tbody");
+  tbody.innerHTML = "";
+  (data.items || []).forEach(it=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><select class="form-select service" disabled><option>${it.service||""}</option></select></td>
+      <td><select class="form-select option" disabled><option>${it.option||""}</option></select></td>
+      <td><input type="number" class="form-control qty" value="${it.qty||1}" readonly /></td>
+      <td><input type="number" class="form-control price" value="${it.price||0}" readonly /><small class="discount-note"></small></td>
+      <td class="subtotal">${it.subtotal||0}</td>
+      <td></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // 鎖定唯讀
+  document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
+  document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
+
+  // 隱藏新增/分享按鈕（客戶只需查看與同意）
+  document.getElementById("addRow").style.display = "none";
+  document.getElementById("shareLinkBtn").style.display = "none";
+
+  // 更新總價
+  updateTotals();
+}
 </script>
 </body>
 </html>
