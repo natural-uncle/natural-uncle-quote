@@ -4,10 +4,7 @@
   <meta charset="UTF-8" />
   <title>自然大叔 線上報價單</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- UI 套件：Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
   <style>
     body { font-family: "Microsoft JhengHei", sans-serif; background:#eaeaea; }
     .container-quote {
@@ -15,19 +12,15 @@
       padding: 20px; border:1px solid #ddd; box-shadow:0 0 10px rgba(0,0,0,.1);
       position: relative; overflow: hidden;
     }
-    /* ✅ 背景浮水印：使用 2.png，800px 間距、-45度、透明 0.02 */
     .container-quote::before{
       content:""; position:absolute; inset:0;
-      background-image:url('https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png');
-      background-repeat:repeat; background-size:800px;
+      background-image:url('https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png'); background-repeat:repeat; background-size:800px;
       transform:rotate(-45deg); opacity:.02; z-index:0;
     }
     .container-quote > * { position:relative; z-index:1; }
 
-    /* LOGO 滿版置中 */
     .logo { width:100%; max-height:150px; object-fit:contain; display:block; margin:0 auto 10px; }
 
-    /* 頂部固定資訊（承辦項目 / 報價日期） */
     .quote-info { text-align:center; font-weight:700; color:#333; margin-bottom:14px; }
     .quote-info .qi-proj, .quote-info .qi-date, .quote-info .qi-sep { display:inline; }
     @media (max-width:576px){
@@ -37,19 +30,14 @@
 
     .section-title { margin-top:15px; font-weight:700; border-bottom:2px solid #444; padding-bottom:4px; }
 
-    /* 預約時間藍色強調區 */
     #cleanFullBox{
       font-size:1.4rem; font-weight:700; color:#fff; background:#0d6efd;
       border:2px solid #0a58ca; border-radius:8px; text-align:center; margin-top:10px;
     }
 
-    /* 單價旁的優惠小字提示 */
     .discount-note{ font-size:.75rem; color:green; display:block; }
-
-    /* 產生連結顯示區 */
     .link-box{ background:#eef6ff; border-radius:6px; padding:10px; margin-top:12px; word-wrap:break-word; }
     .link-box .input-group input { font-size:.95rem; }
-
     .footer-bar{ background:#dbe9f6; padding:12px; text-align:center; margin-top:20px; border-top:2px solid #bbb; }
 
     @media (max-width:768px){
@@ -57,86 +45,46 @@
       table{ font-size:.9rem; }
     }
 
-    /* ─────────────────────────────
-       C. 手機卡片表單樣式（取代傳統表格）
-       ───────────────────────────── */
+    /* 手機卡片表單樣式 */
     @media (max-width: 576px){
       #quoteTable thead { display: none; }
-      #quoteTable, #quoteTable tbody, #quoteTable tr, #quoteTable td {
-        display: block; width: 100%;
-      }
+      #quoteTable, #quoteTable tbody, #quoteTable tr, #quoteTable td { display: block; width: 100%; }
       #quoteTable tbody tr{
         background:#fff; border:1px solid #ddd; border-radius:12px;
         padding:10px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.05);
-
-        /* 卡片用 grid 排版：上：服務/補充；下：數量/單價；最下：小計/操作 */
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas:
-          "svc svc"
-          "opt opt"
-          "qty price"
-          "sub ops";
+        display: grid; grid-template-columns: 1fr 1fr;
+        grid-template-areas: "svc svc" "opt opt" "qty price" "sub ops";
         gap: 8px 12px;
       }
-      /* 指定各欄位在 grid 的區塊 */
       #quoteTable td:nth-child(1){ grid-area: svc; }
       #quoteTable td:nth-child(2){ grid-area: opt; }
       #quoteTable td:nth-child(3){ grid-area: qty; }
       #quoteTable td:nth-child(4){ grid-area: price; }
       #quoteTable td:nth-child(5){ grid-area: sub; }
       #quoteTable td:nth-child(6){ grid-area: ops; }
-
-      #quoteTable td{
-        border:0 !important; padding:0;
-      }
-      #quoteTable td::before{
-        content: attr(data-label);
-        display:block; font-weight:700; color:#555; margin-bottom:4px;
-      }
-      /* 小計加強顯示 */
+      #quoteTable td{ border:0 !important; padding:0; }
+      #quoteTable td::before{ content: attr(data-label); display:block; font-weight:700; color:#555; margin-bottom:4px; }
       #quoteTable td:nth-child(5) .subtotal{
         display:inline-block; font-size:1.1rem; font-weight:800; color:#d63384;
         padding:4px 8px; background:#fff0f6; border:1px solid #f3c2db; border-radius:8px;
       }
-      /* 操作按鈕滿版 */
       #quoteTable td:nth-child(6) .btn{ width:100%; }
-      /* 避免固定底欄遮住內容 */
-      body{ padding-bottom: 90px; }
+      body{ padding-bottom: 70px; } /* 預留空間給底部列 */
     }
 
-    /* ─────────────────────────────
-       B. 手機底部固定工具列（加強明顯度）
-       ───────────────────────────── */
+    /* 手機底部固定工具列（已移除同意按鈕，只保留產生連結） */
     .mobile-bottom-bar{
       position: fixed; left:0; right:0; bottom:0; z-index: 1030;
-      background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%);
-      color:#fff;
+      background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%); color:#fff;
       box-shadow: 0 -6px 20px rgba(13,110,253,.35);
-      border-top:0;
       padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-      display:none; align-items:center; justify-content:space-between;
-      gap: 10px;
+      display:none; align-items:center; justify-content:space-between; gap: 10px;
     }
-    @media (max-width: 768px){
-      .mobile-bottom-bar{ display:flex; }
-    }
-    .mobile-bottom-bar .total-strong{
-      font-weight: 900; font-size: 1.15rem;
-    }
-    .mobile-bottom-bar .btn{
-      margin-bottom:0; box-shadow: 0 2px 8px rgba(0,0,0,.2);
-    }
-    .mobile-bottom-bar .btn-primary{
-      background:#fff; color:#0d6efd; border-color:#fff;
-    }
-    .mobile-bottom-bar .btn-outline-secondary{
-      border-color:#fff; color:#fff;
-    }
+    @media (max-width: 768px){ .mobile-bottom-bar{ display:flex; } }
+    .mobile-bottom-bar .total-strong{ font-weight: 900; font-size: 1.05rem; }
+    .mobile-bottom-bar .btn{ margin-bottom:0; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .mobile-bottom-bar .btn-outline-light{ border-color:#fff; color:#fff; }
 
-    /* ─────────────────────────────
-       合計醒目樣式（桌機＋手機共用）
-       ───────────────────────────── */
     .total-banner{
       background: #fff7e6; border:1px solid #ffd8a8; color:#d9480f;
       border-radius:12px; padding:10px 14px; display:inline-block; font-weight:900;
@@ -148,15 +96,12 @@
 <body>
 <div class="container-quote">
 
-  <!-- 🔹 LOGO（使用 2.png） -->
   <div class="text-center">
     <img src="https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png" alt="自然大叔 Logo" class="logo" />
   </div>
 
-  <!-- 🔹 承辦項目 / 報價日期（自動帶入，行動版自動分兩行） -->
   <div id="quoteInfo" class="quote-info"></div>
 
-  <!-- 🔹 客戶資訊 -->
   <h5 class="section-title">客戶資訊</h5>
   <div class="row g-2 mb-3">
     <div class="col-md-6 col-12">
@@ -175,7 +120,6 @@
     </div>
   </div>
 
-  <!-- 🔹 技師資訊 -->
   <h5 class="section-title">技師人員資訊</h5>
   <div class="row g-2 mb-3">
     <div class="col-md-6 col-12">
@@ -188,7 +132,6 @@
     </div>
   </div>
 
-  <!-- 🔹 預約清洗時間（藍底區塊＋日期/時間選擇） -->
   <h5 class="section-title">預約清洗時間</h5>
   <div id="cleanFullBox" class="p-3">
     🕒 完整預約時間：<span id="cleanFull">尚未選擇</span>
@@ -198,7 +141,6 @@
     </div>
   </div>
 
-  <!-- 🔹 服務項目（桌機：表格；手機：卡片表單） -->
   <h5 class="section-title">服務項目</h5>
   <div class="table-responsive">
     <table id="quoteTable" class="table table-bordered bg-white">
@@ -213,7 +155,6 @@
         </tr>
       </thead>
       <tbody>
-        <!-- 預設一列 -->
         <tr>
           <td>
             <select class="form-select service">
@@ -260,14 +201,11 @@
   </div>
   <button id="addRow" class="btn btn-primary mb-2">➕ 新增項目</button>
 
-  <!-- 🔹 其他事項 -->
   <h5 class="section-title">其他事項</h5>
   <textarea id="otherNotes" class="form-control" rows="3">最終費用將依現場實際狀況進行調整，如有額外項目，將事前與您說明與報價。</textarea>
 
-  <!-- 🔹 合計（醒目樣式） -->
   <h5 class="mt-3 total-banner">合計：<span id="total">0</span> 元</h5>
 
-  <!-- 🔹 備註與保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
   <ol>
     <li>請於確認本報價內容無誤後，以按下「我同意此報價」按鈕回覆，以利後續安排作業。</li>
@@ -278,7 +216,6 @@
     <li>若您有任何疑問或需進一步協助，歡迎直接點及下方窗口，直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
   </ol>
 
-  <!-- 🔹 聯絡資訊 + 社群 -->
   <h5 class="section-title">聯絡資訊</h5>
   <div class="row align-items-start">
     <div class="col-md-6 col-12 mb-2">
@@ -294,51 +231,42 @@
     </div>
   </div>
 
-  <!-- 🔹 功能按鈕（編輯模式保留「產生連結」；唯讀將隱藏） -->
+  <!-- 編輯模式：桌機可產生連結 -->
   <div class="mt-3 text-center">
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
-  <!-- 🔹 唯讀（桌機）同意按鈕容器：唯讀且未封存時才顯示 -->
+  <!-- 唯讀（桌機）同意按鈕：唯讀未封存才顯示 -->
   <div id="readonlyActions" class="text-center mt-3 d-none">
     <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
   </div>
 
-  <!-- 🔹 產生連結顯示（含一鍵複製） -->
   <div id="shareLinkBox" class="link-box d-none"></div>
 
 </div>
 
-<!-- 手機底部固定工具列（md 以下顯示；唯讀未封存也可同意） -->
+<!-- 手機底部固定工具列：只保留「產生連結」 -->
 <div class="mobile-bottom-bar d-md-none">
   <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
   <div class="d-flex gap-2 flex-grow-1">
-    <button class="btn btn-primary btn-sm flex-fill" id="confirmBtnMobile">我同意此報價</button>
-    <button class="btn btn-outline-secondary btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
+    <!-- 已移除 confirmBtnMobile -->
+    <button class="btn btn-outline-light btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
   </div>
 </div>
 
 <div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
 
 <script>
-/* ===============================
-   A. 頂部固定資訊：承辦項目＋報價日期（行動版自動分兩行）
-   =============================== */
+/* ===== 頂部資訊 ===== */
 (function initHeader(){
   const project = "家電清洗服務";
   const d = new Date();
   const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-  const qi = document.getElementById("quoteInfo");
-  qi.innerHTML = `
-    <span class="qi-proj">承辦項目：${project}</span>
-    <span class="qi-sep"> ｜ </span>
-    <span class="qi-date">報價日期：${dateStr}</span>
-  `;
+  document.getElementById("quoteInfo").innerHTML =
+    `<span class="qi-proj">承辦項目：${project}</span><span class="qi-sep"> ｜ </span><span class="qi-date">報價日期：${dateStr}</span>`;
 })();
 
-/* ===============================
-   B. 預約時間：在藍色區塊即時合成可讀字串
-   =============================== */
+/* ===== 預約時間合成 ===== */
 function updateCleanFull(){
   const dv = document.getElementById("cleanDate").value;
   const tv = document.getElementById("cleanTime").value;
@@ -353,21 +281,14 @@ function updateCleanFull(){
 document.getElementById("cleanDate").addEventListener("change", updateCleanFull);
 document.getElementById("cleanTime").addEventListener("change", updateCleanFull);
 
-/* ===============================
-   C. 自動帶價 + 優惠規則 + 手動覆寫
-   =============================== */
+/* ===== 自動帶價 + 合計 ===== */
 function updateTotals(){
-  let total = 0;
-
-  // 先掃一輪，判斷全表是否「存在冷氣清洗」與「存在自來水管清洗」
-  let hasAC = false, hasPipe = false;
+  let total = 0, hasAC=false, hasPipe=false;
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const s = tr.querySelector(".service")?.value || "";
     if(s === "冷氣清洗") hasAC = true;
     if(s === "自來水管清洗") hasPipe = true;
   });
-
-  // 逐列計算
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const service = tr.querySelector(".service")?.value || "";
     const option  = tr.querySelector(".option")?.value  || "";
@@ -375,12 +296,9 @@ function updateTotals(){
     const priceEl = tr.querySelector(".price");
     const noteEl  = tr.querySelector(".discount-note");
     const subEl   = tr.querySelector(".subtotal");
-
     const qty = Math.max(1, Number(qtyEl?.value || 1));
     let price = Number(priceEl?.value || 0);
-
     if(noteEl) noteEl.textContent = "";
-
     const overridden = priceEl?.dataset.override === "true";
     if(!overridden){
       if(service === "冷氣清洗" && option.includes("分離式")){
@@ -397,41 +315,28 @@ function updateTotals(){
       } else if(service === "臭氧殺菌"){
         price = (qty >= 5) ? 150 : 200;
         if(qty >= 5 && noteEl) noteEl.textContent = "已套用五台以上優惠價";
-      } else if(service === "變形金剛機型"){
-        price = 500;
-      } else if(service === "一體式水盤機型"){
-        price = 500;
-      } else if(service === "超長費用"){
-        price = 300;
-      } else if(service === "水塔清洗"){
+      } else if(service === "變形金剛機型"){ price = 500; }
+      else if(service === "一體式水盤機型"){ price = 500; }
+      else if(service === "超長費用"){ price = 300; }
+      else if(service === "水塔清洗"){
         price = hasPipe ? 800 : 1000;
         if(hasPipe && noteEl) noteEl.textContent = "已套用自來水管清洗優惠價";
       }
-      if(priceEl) priceEl.value = price; // 同步到畫面
+      priceEl.value = price;
     }
-
     const subtotal = qty * (Number(priceEl?.value || price) || 0);
-    if(subEl) subEl.textContent = String(subtotal);
+    subEl.textContent = String(subtotal);
     total += subtotal;
   });
-
   document.getElementById("total").textContent = String(total);
-  const tm = document.getElementById("totalMobile");
-  if (tm) tm.textContent = String(total);
+  const tm = document.getElementById("totalMobile"); if (tm) tm.textContent = String(total);
 }
-
-// 手機卡片化：為每個 td 加上 data-label，供 ::before 使用
 function applyMobileLabels(){
-  const labels = Array.from(document.querySelectorAll('#quoteTable thead th'))
-    .map(th => th.textContent.trim());
+  const labels = Array.from(document.querySelectorAll('#quoteTable thead th')).map(th => th.textContent.trim());
   document.querySelectorAll('#quoteTable tbody tr').forEach(tr=>{
-    Array.from(tr.children).forEach((td, i)=>{
-      td.setAttribute('data-label', labels[i] || '');
-    });
+    Array.from(tr.children).forEach((td, i)=> td.setAttribute('data-label', labels[i] || '') );
   });
 }
-
-// 事件委派：改服務/補充/數量 → 解除覆寫、重算
 document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
   if(e.target.classList.contains("service") || e.target.classList.contains("option") || e.target.classList.contains("qty")){
     const rowPrice = e.target.closest("tr").querySelector(".price");
@@ -439,18 +344,10 @@ document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
     updateTotals();
   }
 });
-
-// 手動輸入單價 → 設覆寫旗標，並重算
 document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
-  if(e.target.classList.contains("price")){
-    e.target.dataset.override = "true";
-    updateTotals();
-  } else if(e.target.classList.contains("qty")){
-    updateTotals();
-  }
+  if(e.target.classList.contains("price")){ e.target.dataset.override = "true"; updateTotals(); }
+  else if(e.target.classList.contains("qty")){ updateTotals(); }
 });
-
-// 新增/刪除列
 document.getElementById("addRow").addEventListener("click", ()=>{
   const tbody = document.querySelector("#quoteTable tbody");
   const tr = document.createElement("tr");
@@ -490,63 +387,44 @@ document.getElementById("addRow").addEventListener("click", ()=>{
     <td><input type="number" class="form-control qty" value="1" min="1" /></td>
     <td><input type="number" class="form-control price" value="0" /><small class="discount-note"></small></td>
     <td class="subtotal">0</td>
-    <td><button class="btn btn-danger btn-sm removeRow">刪除</button></td>
-  `;
+    <td><button class="btn btn-danger btn-sm removeRow">刪除</button></td>`;
   tbody.appendChild(tr);
-  updateTotals();
-  applyMobileLabels();
+  updateTotals(); applyMobileLabels();
 });
 document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
   if(e.target.classList.contains("removeRow")){
     e.target.closest("tr").remove();
-    updateTotals();
-    applyMobileLabels();
+    updateTotals(); applyMobileLabels();
   }
 });
 
-/* ===============================
-   D. 「我同意此報價」提交（成功後封存連結＋長訊息）
-   =============================== */
+/* ===== 本機保險：鎖定標記（#cid 與 #data） ===== */
+function markLocallyLocked(key){ try{ localStorage.setItem(key, "1"); }catch(_){} }
+function isLocallyLocked(key){ try{ return localStorage.getItem(key)==="1"; }catch(_){ return false; } }
+
+/* ===== 提交同意（桌機用；手機已移除按鈕） ===== */
 async function handleConfirmSubmit(clickedBtn){
   if (clickedBtn && clickedBtn.disabled) return;
   const originalText = clickedBtn ? clickedBtn.textContent : "";
   try{
-    if (clickedBtn){
-      clickedBtn.disabled = true;
-      clickedBtn.textContent = "送出中…";
-    }
+    if (clickedBtn){ clickedBtn.disabled = true; clickedBtn.textContent = "送出中…"; }
 
     const payload = collectShareData();
-
-    // 若連結來自 #cid=...，帶上 cloudinaryId（方便後端對帳/封存）
     const hash = location.hash || "";
     let cid = null;
-    if (hash.startsWith("#cid=")) {
-      cid = decodeURIComponent(hash.replace("#cid=",""));
-      payload.cloudinaryId = cid;
-    }
+    if (hash.startsWith("#cid=")) { cid = decodeURIComponent(hash.replace("#cid=","")); payload.cloudinaryId = cid; }
 
     const res = await fetch("/api/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
     });
-
     if(!res.ok){
-      const t = await res.text();
-      alert("送出失敗：" + t);
-      if (clickedBtn){
-        clickedBtn.disabled = false;
-        clickedBtn.textContent = originalText;
-      }
+      const t = await res.text(); alert("送出失敗：" + t);
+      if (clickedBtn){ clickedBtn.disabled = false; clickedBtn.textContent = originalText; }
       return;
     }
-
     await res.json();
 
-    // ✅ 成功訊息（你的新版說明）
-    alert(
-`✅ 感謝您的確認，我們明日見囉！😊
+    alert(`✅ 感謝您的確認，我們明日見囉！😊
 為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
 
 若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
@@ -556,68 +434,40 @@ async function handleConfirmSubmit(clickedBtn){
 
 如有異動也歡迎提前與我們聯繫，謝謝您配合！
 
-— 自然大叔 敬上`
-    );
+— 自然大叔 敬上`);
 
-    // ⛔️ 立刻封存此連結（雲端鎖定）
+    // A) 雲端鎖定（#cid）
     if (cid) {
-      try{
-        await fetch("/api/lock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: cid })
-        });
-      }catch(e){ /* 即使鎖定失敗，也不阻擋流程 */ }
+      try{ await fetch("/api/lock", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id: cid }) }); }catch(_){}
+      // 避免快取：重新載入時帶上 cache-buster
+      setTimeout(()=>{ location.href = location.pathname + "#cid=" + encodeURIComponent(cid); location.reload(); }, 300);
+      // 本機保險
+      markLocallyLocked("locked:cid:"+cid);
+    } else if (hash.startsWith("#data=")) {
+      // B) 舊型連結：以本機保險避免重複提交
+      markLocallyLocked("locked:data:"+hash);
+      const btn = document.getElementById("confirmBtnDesktop");
+      if (btn){ btn.textContent = "已送出同意"; btn.disabled = true; }
     }
-
-    // 前端立即把操作按鈕藏起來，避免重複送出
-    const btnConfirmM = document.getElementById("confirmBtnMobile");
-    if (btnConfirmM) { btnConfirmM.textContent = "已送出同意"; btnConfirmM.disabled = true; }
-    const btnConfirmD = document.getElementById("confirmBtnDesktop");
-    if (btnConfirmD) { btnConfirmD.textContent = "已送出同意"; btnConfirmD.disabled = true; }
-    const btnShareDesk = document.getElementById("shareLinkBtn");
-    if (btnShareDesk) btnShareDesk.style.display = "none";
-    const btnShareM = document.getElementById("shareLinkBtnMobile");
-    if (btnShareM) btnShareM.style.display = "none";
 
   }catch(err){
     console.error(err);
     alert("送出失敗，請稍後再試。");
-    if (clickedBtn){
-      clickedBtn.disabled = false;
-      clickedBtn.textContent = originalText;
-    }
+    if (clickedBtn){ clickedBtn.disabled = false; clickedBtn.textContent = originalText; }
   }
 }
 
-// 綁定手機與桌機同意按鈕
-document.getElementById('confirmBtnMobile')?.addEventListener('click', function(){
-  handleConfirmSubmit(this);
-});
-document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){
-  handleConfirmSubmit(this);
-});
+/* 綁定桌機同意按鈕 */
+document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
 
-/* ===============================
-   E. 產生分享連結（含一鍵複製）
-   - 編輯模式：可用（桌機底部按鈕＋手機快捷）
-   - 唯讀模式：隱藏（包含手機快捷）
-   =============================== */
+/* ===== 產生分享連結（保留你原本行為） ===== */
 async function handleShareClick(){
   try{
     const payload = collectShareData();
     const res = await fetch("/api/share", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
     });
-
-    if(!res.ok){
-      const t = await res.text();
-      alert("產生連結失敗：" + t);
-      return;
-    }
-
+    if(!res.ok){ const t = await res.text(); alert("產生連結失敗：" + t); return; }
     const data = await res.json();
     const href = data.share_url || data.pdf_url || "#";
     const box = document.getElementById("shareLinkBox");
@@ -628,42 +478,21 @@ async function handleShareClick(){
         <input type="text" class="form-control" id="shareLinkInput" value="${href}" readonly>
         <button class="btn btn-primary" id="copyLinkBtn" type="button">📋 一鍵複製</button>
       </div>
-      <div class="mt-2"><a href="${href}" target="_blank">${href}</a></div>
-    `;
-
-    // 綁定一鍵複製
+      <div class="mt-2"><a href="${href}" target="_blank">${href}</a></div>`;
     document.getElementById('copyLinkBtn')?.addEventListener('click', async ()=>{
       const link = document.getElementById('shareLinkInput')?.value || href;
       try{
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(link);
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = link; document.body.appendChild(ta);
-          ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-        }
-        const btn = document.getElementById('copyLinkBtn');
-        const orig = btn.textContent;
-        btn.textContent = "✅ 已複製";
-        setTimeout(()=> btn.textContent = orig, 1500);
-      }catch(e){
-        alert("複製失敗，請手動選取複製");
-      }
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(link);
+        else { const ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+        const btn=this; const el=document.getElementById('copyLinkBtn'); const orig=el.textContent; el.textContent="✅ 已複製"; setTimeout(()=> el.textContent=orig,1500);
+      }catch(_){ alert("複製失敗，請手動選取複製"); }
     });
-
-    window._lastShare = data;
-  }catch(err){
-    console.error(err);
-    alert("產生連結失敗，請稍後再試。");
-  }
+  }catch(err){ console.error(err); alert("產生連結失敗，請稍後再試。"); }
 }
-
 document.getElementById("shareLinkBtn")?.addEventListener("click", handleShareClick);
 document.getElementById('shareLinkBtnMobile')?.addEventListener('click', handleShareClick);
 
-/* ===============================
-   共用：序列化目前畫面資料
-   =============================== */
+/* ===== 序列化資料 ===== */
 function collectShareData(){
   const items = [];
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
@@ -685,103 +514,77 @@ function collectShareData(){
     techPhone: document.getElementById("technicianPhone").value,
     cleanTime: document.getElementById("cleanFull").textContent,
     otherNotes:document.getElementById("otherNotes").value,
-    items,
-    total: document.getElementById("total").textContent
+    items, total: document.getElementById("total").textContent
   };
 }
 
-/* ===============================
-   F. 唯讀模式載入（支援封存狀態）
-   - 支援 #cid=... （走 /api/view 讀 Cloudinary）
-   - 兼容舊的 #data=... 直接還原
-   - 唯讀或封存時：隱藏「新增項目」「產生連結（桌機＋手機）」
-   - 唯讀未封存：**顯示**桌機與手機的「我同意此報價」
-   =============================== */
+/* ===== 唯讀載入（含鎖定檢查與本機保險） ===== */
 (async function loadReadOnlyIfHash(){
   const hash = location.hash || "";
 
-  // A) 新方式：#cid=短代碼
+  // 新型連結：#cid=...
   if (hash.startsWith("#cid=")) {
+    const cid = decodeURIComponent(hash.replace("#cid=",""));
+    // 本機保險：若曾送出同意，先行隱藏
+    if (isLocallyLocked("locked:cid:"+cid)) { hideConfirmButtons(); }
+
     try{
-      const cid = decodeURIComponent(hash.replace("#cid=",""));
-      const r = await fetch(`/api/view?id=${encodeURIComponent(cid)}`);
+      // 加上 cache-buster，避免任何中間層快取
+      const r = await fetch(`/api/view?id=${encodeURIComponent(cid)}&ts=${Date.now()}`, { cache:"no-store" });
       if(!r.ok) throw new Error(await r.text());
       const data = await r.json();
+      applyReadOnlyData(data); applyMobileLabels();
 
-      applyReadOnlyData(data);      // 仍然把資料灌進去（唯讀）
-      applyMobileLabels();
-
-      // 唯讀：顯示桌機同意按鈕，隱藏產生連結
+      // 唯讀：顯示桌機同意（若未封存）
       setReadonlyButtonsVisibility(!data.locked);
 
-      if (data.locked) showLockedNotice();  // ⛔️ 若已封存，提示並隱藏按鈕
+      if (data.locked){ showLockedNotice(); hideConfirmButtons(); }
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
       alert("此連結已失效或資料讀取失敗。");
-      // 進入「安全唯讀」：把所有欄位鎖起來、隱藏按鈕
-      forceReadOnlyBlank();
-      showLockedNotice();
+      forceReadOnlyBlank(); showLockedNotice(); hideConfirmButtons();
       return;
     }
   }
 
-  // B) 舊方式：#data=...
+  // 舊型連結：#data=...
   if (hash.startsWith("#data=")) {
     try{
       const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
-      applyReadOnlyData(data);
-      applyMobileLabels();
+      applyReadOnlyData(data); applyMobileLabels();
 
-      // 舊連結不支援雲端鎖，但仍視為唯讀未封存：顯示桌機同意，隱藏產生連結
-      setReadonlyButtonsVisibility(true);
+      // 若本機已標記送出過，則隱藏同意
+      if (isLocallyLocked("locked:data:"+hash)) { hideConfirmButtons(); showLockedNotice(); }
+      else { setReadonlyButtonsVisibility(true); } // 唯讀未封存（本機可一次同意）
+
       return;
-    }catch(err){
-      console.error("讀取分享資料失敗：", err);
-      updateTotals();
-      applyMobileLabels();
-      return;
-    }
+    }catch(err){ console.error("讀取分享資料失敗：", err); updateTotals(); applyMobileLabels(); return; }
   }
 
-  // C) 無 hash → 編輯模式
-  updateTotals();
-  applyMobileLabels();
+  // 無 hash：編輯模式
+  updateTotals(); applyMobileLabels();
 })();
 
 function setReadonlyButtonsVisibility(canConfirm){
-  // 隱藏「產生連結」（桌機＋手機）
-  const shareDesk = document.getElementById("shareLinkBtn");
-  if (shareDesk) shareDesk.style.display = "none";
-  const shareM = document.getElementById("shareLinkBtnMobile");
-  if (shareM) shareM.style.display = "none";
-
-  // 桌機同意按鈕：唯讀且未封存才顯示
-  const ro = document.getElementById("readonlyActions");
-  if (ro) ro.classList.toggle("d-none", !canConfirm);
-
-  // 手機底欄的同意按鈕：唯讀未封存可見；封存或編輯時會另行處理
-  const confirmM = document.getElementById("confirmBtnMobile");
-  if (confirmM) confirmM.style.display = canConfirm ? "" : "none";
+  // 隱藏產生連結（唯讀都不給產生）
+  const shareDesk = document.getElementById("shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
+  const shareM = document.getElementById("shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
+  // 桌機同意：唯讀未封存才顯示
+  const ro = document.getElementById("readonlyActions"); if (ro) ro.classList.toggle("d-none", !canConfirm);
 }
-
+function hideConfirmButtons(){
+  const d = document.getElementById("confirmBtnDesktop");
+  const ro = document.getElementById("readonlyActions");
+  if (d){ d.style.display = "none"; }
+  if (ro){ ro.classList.add("d-none"); }
+}
 function applyReadOnlyData(data){
-  // 頂部資訊（保持原字樣）
   if(data.quoteInfo){
     const qi = document.getElementById("quoteInfo");
     const m = data.quoteInfo.match(/承辦項目：([^｜\s]+).*?報價日期：(\d{4}\/\d{2}\/\d{2})/);
-    if (m){
-      qi.innerHTML = `
-        <span class="qi-proj">承辦項目：${m[1]}</span>
-        <span class="qi-sep"> ｜ </span>
-        <span class="qi-date">報價日期：${m[2]}</span>
-      `;
-    }else{
-      qi.textContent = data.quoteInfo;
-    }
+    qi.innerHTML = m ? `<span class="qi-proj">承辦項目：${m[1]}</span><span class="qi-sep"> ｜ </span><span class="qi-date">報價日期：${m[2]}</span>` : data.quoteInfo;
   }
-
-  // 基本欄位
   document.getElementById("customerName").value   = data.customer  || "";
   document.getElementById("customerPhone").value  = data.phone     || "";
   document.getElementById("customerAddress").value= data.address   || "";
@@ -789,10 +592,7 @@ function applyReadOnlyData(data){
   document.getElementById("technicianPhone").value= data.techPhone || "";
   document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
   document.getElementById("otherNotes").value     = data.otherNotes|| "";
-
-  // 重建表格
-  const tbody = document.querySelector("#quoteTable tbody");
-  tbody.innerHTML = "";
+  const tbody = document.querySelector("#quoteTable tbody"); tbody.innerHTML = "";
   (data.items || []).forEach(it=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -801,41 +601,27 @@ function applyReadOnlyData(data){
       <td><input type="number" class="form-control qty" value="${it.qty||1}" readonly /></td>
       <td><input type="number" class="form-control price" value="${it.price||0}" readonly /><small class="discount-note"></small></td>
       <td class="subtotal">${it.subtotal||0}</td>
-      <td></td>
-    `;
+      <td></td>`;
     tbody.appendChild(tr);
   });
-
-  // 鎖定唯讀（但不隱藏同意按鈕，讓唯讀仍可同意）
   document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
   document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
-
-  // 唯讀：隱藏「新增項目」與「產生連結」（桌機＋手機）
-  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile"];
-  ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
-
+  // 唯讀：隱藏新增與產生連結（桌機＋手機）
+  ["addRow","shareLinkBtn","shareLinkBtnMobile"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
   updateTotals();
 }
-
-// 顯示封存提示並隱藏所有交互按鈕（雙重保險）
 function showLockedNotice(){
   const box = document.createElement('div');
   box.className = 'alert alert-success mt-2';
   box.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
   document.querySelector('.container-quote').prepend(box);
-
-  const ids = ["shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile","confirmBtnDesktop","addRow","readonlyActions"];
-  ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
-
-// 極端情況（資料壞掉）下的純唯讀空白狀態
 function forceReadOnlyBlank(){
   document.querySelectorAll("input, textarea, select").forEach(el=>{
     if (el.tagName === "SELECT") el.setAttribute("disabled", true);
     else el.setAttribute("readonly", true);
   });
-  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile","confirmBtnDesktop","readonlyActions"];
-  ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
+  ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnDesktop","readonlyActions"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
 </script>
 </body>
