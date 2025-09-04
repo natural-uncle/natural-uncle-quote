@@ -18,7 +18,7 @@
     /* ✅ 背景浮水印：使用 2.png，800px 間距、-45度、透明 0.02 */
     .container-quote::before{
       content:""; position:absolute; inset:0;
-      background-image:url('https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png');
+      background-image:url('2.png');
       background-repeat:repeat; background-size:800px;
       transform:rotate(-45deg); opacity:.02; z-index:0;
     }
@@ -52,7 +52,7 @@
     }
 
     /* ─────────────────────────────
-       A. 手機將表格改成「卡片堆疊」
+       C. 手機卡片表單樣式（取代傳統表格）
        ───────────────────────────── */
     @media (max-width: 576px){
       #quoteTable thead { display: none; }
@@ -62,18 +62,41 @@
       #quoteTable tbody tr{
         background:#fff; border:1px solid #ddd; border-radius:12px;
         padding:10px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.05);
+
+        /* 卡片用 grid 排版：上：服務/補充；下：數量/單價；最下：小計/操作 */
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "svc svc"
+          "opt opt"
+          "qty price"
+          "sub ops";
+        gap: 8px 12px;
       }
+      /* 指定各欄位在 grid 的區塊 */
+      #quoteTable td:nth-child(1){ grid-area: svc; }
+      #quoteTable td:nth-child(2){ grid-area: opt; }
+      #quoteTable td:nth-child(3){ grid-area: qty; }
+      #quoteTable td:nth-child(4){ grid-area: price; }
+      #quoteTable td:nth-child(5){ grid-area: sub; }
+      #quoteTable td:nth-child(6){ grid-area: ops; }
+
       #quoteTable td{
-        border:0 !important; padding:6px 4px;
+        border:0 !important; padding:0;
       }
       #quoteTable td::before{
         content: attr(data-label);
         display:block; font-weight:700; color:#555; margin-bottom:4px;
       }
-      /* 操作按鈕在手機上滿版好點 */
-      #quoteTable td:last-child .btn{ width:100%; }
+      /* 小計加強顯示 */
+      #quoteTable td:nth-child(5) .subtotal{
+        display:inline-block; font-size:1.1rem; font-weight:800; color:#d63384;
+        padding:4px 8px; background:#fff0f6; border:1px solid #f3c2db; border-radius:8px;
+      }
+      /* 操作按鈕滿版 */
+      #quoteTable td:nth-child(6) .btn{ width:100%; }
       /* 避免固定底欄遮住內容 */
-      body{ padding-bottom: 70px; }
+      body{ padding-bottom: 80px; }
     }
 
     /* ─────────────────────────────
@@ -85,10 +108,24 @@
       backdrop-filter: saturate(180%) blur(8px);
       border-top:1px solid #ddd; padding:10px 12px;
       display:none; align-items:center; justify-content:space-between;
+      gap: 10px;
     }
     @media (max-width: 768px){
       .mobile-bottom-bar{ display:flex; }
     }
+    .mobile-bottom-bar .total-strong{
+      font-weight: 900; font-size: 1.1rem;
+    }
+
+    /* ─────────────────────────────
+       合計醒目樣式（桌機＋手機共用）
+       ───────────────────────────── */
+    .total-banner{
+      background: #fff7e6; border:1px solid #ffd8a8; color:#d9480f;
+      border-radius:12px; padding:10px 14px; display:inline-block; font-weight:900;
+      box-shadow: 0 2px 8px rgba(255,173,77,.15);
+    }
+    .total-banner #total{ font-size:1.4rem; }
   </style>
 </head>
 <body>
@@ -96,7 +133,7 @@
 
   <!-- 🔹 LOGO（使用 2.png） -->
   <div class="text-center">
-    <img src="https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png" alt="自然大叔 Logo" class="logo" />
+    <img src="2.png" alt="自然大叔 Logo" class="logo" />
   </div>
 
   <!-- 🔹 承辦項目 / 報價日期（自動帶入，非輸入欄位） -->
@@ -144,7 +181,7 @@
     </div>
   </div>
 
-  <!-- 🔹 服務項目表格（自動帶價 + 可手動改價） -->
+  <!-- 🔹 服務項目（桌機：表格；手機：卡片表單） -->
   <h5 class="section-title">服務項目</h5>
   <div class="table-responsive">
     <table id="quoteTable" class="table table-bordered bg-white">
@@ -210,8 +247,8 @@
   <h5 class="section-title">其他事項</h5>
   <textarea id="otherNotes" class="form-control" rows="3">最終費用將依現場實際狀況進行調整，如有額外項目，將事前與您說明與報價。</textarea>
 
-  <!-- 🔹 合計 -->
-  <h5 class="mt-3">合計：<span id="total">0</span> 元</h5>
+  <!-- 🔹 合計（醒目樣式） -->
+  <h5 class="mt-3 total-banner">合計：<span id="total">0</span> 元</h5>
 
   <!-- 🔹 備註與保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
@@ -240,9 +277,9 @@
     </div>
   </div>
 
-  <!-- 🔹 功能按鈕 -->
+  <!-- 🔹 功能按鈕（依需求移除「我同意此報價」；保留「產生連結」） -->
   <div class="mt-3 text-center">
-    <button id="confirmBtn" class="btn btn-outline-primary">✅ 我同意此報價</button>
+    <!-- <button id="confirmBtn" class="btn btn-outline-primary">✅ 我同意此報價</button>  已移除 -->
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
@@ -251,12 +288,12 @@
 
 </div>
 
-<!-- B. 手機底部固定工具列（md 以下顯示） -->
+<!-- B. 手機底部固定工具列（md 以下顯示；唯讀時自動隱藏「產生連結」） -->
 <div class="mobile-bottom-bar d-md-none">
-  <div class="fw-bold">合計：<span id="totalMobile">0</span> 元</div>
-  <div class="d-flex gap-2">
-    <button class="btn btn-primary btn-sm" id="confirmBtnMobile">我同意此報價</button>
-    <button class="btn btn-outline-secondary btn-sm" id="shareLinkBtnMobile">產生連結</button>
+  <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
+  <div class="d-flex gap-2 flex-grow-1">
+    <button class="btn btn-primary btn-sm flex-fill" id="confirmBtnMobile">我同意此報價</button>
+    <button class="btn btn-outline-secondary btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
   </div>
 </div>
 
@@ -296,7 +333,7 @@ document.getElementById("cleanTime").addEventListener("change", updateCleanFull)
 function updateTotals(){
   let total = 0;
 
-  // 先掃一輪
+  // 先掃一輪，判斷全表是否「存在冷氣清洗」與「存在自來水管清洗」
   let hasAC = false, hasPipe = false;
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const s = tr.querySelector(".service")?.value || "";
@@ -344,7 +381,7 @@ function updateTotals(){
         price = hasPipe ? 800 : 1000;
         if(hasPipe && noteEl) noteEl.textContent = "已套用自來水管清洗優惠價";
       }
-      if(priceEl) priceEl.value = price;
+      if(priceEl) priceEl.value = price; // 同步到畫面
     }
 
     const subtotal = qty * (Number(priceEl?.value || price) || 0);
@@ -353,12 +390,11 @@ function updateTotals(){
   });
 
   document.getElementById("total").textContent = String(total);
-  // 同步手機底欄合計
   const tm = document.getElementById("totalMobile");
   if (tm) tm.textContent = String(total);
 }
 
-// 手機卡片化：將 thead 標題自動填入每個 td 的 data-label
+// 手機卡片化：為每個 td 加上 data-label，供 ::before 使用
 function applyMobileLabels(){
   const labels = Array.from(document.querySelectorAll('#quoteTable thead th'))
     .map(th => th.textContent.trim());
@@ -443,15 +479,18 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
 });
 
 /* ===============================
-   D. 確認按鈕（送出＋防連點＋成功後鎖住）
+   D. 「我同意此報價」提交（行動版快捷鍵可用；桌機已移除按鈕）
    =============================== */
-const confirmBtn = document.getElementById("confirmBtn");
-confirmBtn.addEventListener("click", async ()=>{
-  if (confirmBtn.disabled) return;
-  const oldText = confirmBtn.textContent;
+async function handleConfirmSubmit(clickedBtn){
+  // clickedBtn 可能是手機底欄的按鈕
+  if (clickedBtn && clickedBtn.disabled) return;
+  const originalText = clickedBtn ? clickedBtn.textContent : "";
+
   try{
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = "送出中…";
+    if (clickedBtn){
+      clickedBtn.disabled = true;
+      clickedBtn.textContent = "送出中…";
+    }
 
     const payload = collectShareData();
     const hash = location.hash || "";
@@ -468,29 +507,40 @@ confirmBtn.addEventListener("click", async ()=>{
     if(!res.ok){
       const t = await res.text();
       alert("送出失敗：" + t);
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = oldText;
+      if (clickedBtn){
+        clickedBtn.disabled = false;
+        clickedBtn.textContent = originalText;
+      }
       return;
     }
 
     await res.json();
     alert("✅ 已送出同意！感謝您的察看，此將留存紀錄");
-    confirmBtn.textContent = "已送出同意";
-    // 保持 disabled=true 避免重複送出
+    if (clickedBtn){
+      clickedBtn.textContent = "已送出同意";
+      clickedBtn.disabled = true; // 保持鎖住
+    }
   }catch(err){
     console.error(err);
     alert("送出失敗，請稍後再試。");
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = oldText;
+    if (clickedBtn){
+      clickedBtn.disabled = false;
+      clickedBtn.textContent = originalText;
+    }
   }
+}
+
+// 綁定手機底欄「我同意此報價」
+document.getElementById('confirmBtnMobile')?.addEventListener('click', function(){
+  handleConfirmSubmit(this);
 });
 
 /* ===============================
    E. 產生分享連結
-   - 若你的後端已接 Cloudinary /api/share，這段會呼叫它
-   - 若你仍用舊的 #data=...，把 fetch 換回舊邏輯即可
+   - 編輯模式：可用（桌機底部按鈕＋手機快捷）
+   - 唯讀模式：隱藏（包含手機快捷）
    =============================== */
-document.getElementById("shareLinkBtn").addEventListener("click", async ()=>{
+async function handleShareClick(){
   try{
     const payload = collectShareData();
     const res = await fetch("/api/share", {
@@ -506,28 +556,23 @@ document.getElementById("shareLinkBtn").addEventListener("click", async ()=>{
     }
 
     const data = await res.json();
+    const href = data.share_url || data.pdf_url || "#";
     const box = document.getElementById("shareLinkBox");
     box.classList.remove("d-none");
-    // 兼容你可能使用的兩種回傳：JSON 連結或 PDF 連結
-    const href = data.share_url || data.pdf_url || "#";
     box.innerHTML = `<b>專屬報價單網址：</b><br><a href="${href}" target="_blank">${href}</a>`;
-
-    // 手機快捷按鈕也顯示相同結果
     window._lastShare = data;
   }catch(err){
     console.error(err);
     alert("產生連結失敗，請稍後再試。");
   }
-});
+}
 
-// 手機底欄快捷鍵：轉呼叫原本按鈕
-document.getElementById('confirmBtnMobile')?.addEventListener('click', ()=>{
-  document.getElementById('confirmBtn')?.click();
-});
-document.getElementById('shareLinkBtnMobile')?.addEventListener('click', ()=>{
-  document.getElementById('shareLinkBtn')?.click();
-});
+document.getElementById("shareLinkBtn")?.addEventListener("click", handleShareClick);
+document.getElementById('shareLinkBtnMobile')?.addEventListener('click', handleShareClick);
 
+/* ===============================
+   共用：序列化目前畫面資料
+   =============================== */
 function collectShareData(){
   const items = [];
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
@@ -558,6 +603,7 @@ function collectShareData(){
    F. 唯讀模式載入
    - 支援 #cid=... （走 /api/view 讀 Cloudinary）
    - 兼容舊的 #data=... 直接還原
+   - 唯讀時：隱藏「新增項目」「產生連結（桌機＋手機）」
    =============================== */
 (async function loadReadOnlyIfHash(){
   const hash = location.hash || "";
@@ -633,9 +679,12 @@ function applyReadOnlyData(data){
   document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
   document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
 
-  // 隱藏新增/分享按鈕（客戶只需查看與同意）
+  // 唯讀：隱藏「新增項目」與「產生連結」（桌機＋手機）
   document.getElementById("addRow").style.display = "none";
-  document.getElementById("shareLinkBtn").style.display = "none";
+  const shareBtn = document.getElementById("shareLinkBtn");
+  if (shareBtn) shareBtn.style.display = "none";
+  const shareBtnMobile = document.getElementById("shareLinkBtnMobile");
+  if (shareBtnMobile) shareBtnMobile.style.display = "none";
 
   updateTotals();
 }
