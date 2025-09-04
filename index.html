@@ -394,10 +394,38 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
 });
 
 /* ===============================
-   D. 確認按鈕（Demo）
+   D. 確認按鈕（正式：送到 Netlify Functions -> GitHub Issues）
    =============================== */
-document.getElementById("confirmBtn").addEventListener("click", ()=>{
-  alert("✅ 您已確認此報價！（示範用，尚未串接 Email / Synology）");
+document.getElementById("confirmBtn").addEventListener("click", async ()=>{
+  try{
+    // 用你頁面既有的序列化函式，把畫面資料收集成 JSON
+    const payload = collectShareData();
+
+    // 若此頁是從 Cloudinary 分享連結打開（#cid=...），順手帶上 public_id 方便對帳
+    const hash = location.hash || "";
+    if (hash.startsWith("#cid=")) {
+      payload.cloudinaryId = decodeURIComponent(hash.replace("#cid=",""));
+    }
+
+    // 送到 Netlify 的 Serverless API（我們在 netlify.toml 已把路由指到 confirm.js）
+    const res = await fetch("/api/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok){
+      const t = await res.text();
+      alert("送出失敗：" + t);
+      return;
+    }
+
+    const data = await res.json();
+    alert("✅ 已送出同意！我們會盡快與您聯繫。\n紀錄連結：" + (data.issue_url || "（無）"));
+  }catch(err){
+    console.error(err);
+    alert("送出失敗，請稍後再試。");
+  }
 });
 
 /* ===============================
