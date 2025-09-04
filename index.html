@@ -2,12 +2,9 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>自然大叔 線上報價單</title>
+  <title>自然大叔 線上報價單 - 手機優化版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- UI 套件：Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
   <style>
     body { font-family: "Microsoft JhengHei", sans-serif; background:#eaeaea; }
     .container-quote {
@@ -15,64 +12,91 @@
       padding: 20px; border:1px solid #ddd; box-shadow:0 0 10px rgba(0,0,0,.1);
       position: relative; overflow: hidden;
     }
-    /* ✅ 背景浮水印：使用 2.png，800px 間距、-45度、透明 0.02 */
     .container-quote::before{
       content:""; position:absolute; inset:0;
-      background-image:url('https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png');
-      background-repeat:repeat; background-size:800px;
+      background-image:url('2.png'); background-repeat:repeat; background-size:800px;
       transform:rotate(-45deg); opacity:.02; z-index:0;
     }
     .container-quote > * { position:relative; z-index:1; }
-
-    /* LOGO 滿版置中 */
     .logo { width:100%; max-height:150px; object-fit:contain; display:block; margin:0 auto 10px; }
 
-    /* 頂部固定資訊（承辦項目 / 報價日期） */
     .quote-info { text-align:center; font-weight:700; color:#333; margin-bottom:14px; }
+    .quote-info .qi-proj, .quote-info .qi-date, .quote-info .qi-sep { display:inline; }
+    @media (max-width:576px){
+      .quote-info .qi-proj, .quote-info .qi-date { display:block; }
+      .quote-info .qi-sep { display:none; }
+    }
 
     .section-title { margin-top:15px; font-weight:700; border-bottom:2px solid #444; padding-bottom:4px; }
-
-    /* 預約時間藍色強調區 */
     #cleanFullBox{
       font-size:1.4rem; font-weight:700; color:#fff; background:#0d6efd;
       border:2px solid #0a58ca; border-radius:8px; text-align:center; margin-top:10px;
     }
 
-    /* 單價旁的優惠小字提示 */
     .discount-note{ font-size:.75rem; color:green; display:block; }
-
-    /* 產生連結顯示區 */
     .link-box{ background:#eef6ff; border-radius:6px; padding:10px; margin-top:12px; word-wrap:break-word; }
+    .link-box .input-group input { font-size:.95rem; }
 
     .footer-bar{ background:#dbe9f6; padding:12px; text-align:center; margin-top:20px; border-top:2px solid #bbb; }
 
-    @media (max-width:768px){
-      .btn{ width:100%; margin-bottom:8px; }
-      table{ font-size:.9rem; }
+    /* 行動：表格→卡片 */
+    @media (max-width: 576px){
+      #quoteTable thead { display: none; }
+      #quoteTable, #quoteTable tbody, #quoteTable tr, #quoteTable td { display: block; width: 100%; }
+      #quoteTable tbody tr{
+        background:#fff; border:1px solid #ddd; border-radius:12px;
+        padding:10px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.05);
+        display: grid; grid-template-columns: 1fr 1fr;
+        grid-template-areas: "svc svc" "opt opt" "qty price" "sub ops";
+        gap: 8px 12px;
+      }
+      #quoteTable td:nth-child(1){ grid-area: svc; }
+      #quoteTable td:nth-child(2){ grid-area: opt; }
+      #quoteTable td:nth-child(3){ grid-area: qty; }
+      #quoteTable td:nth-child(4){ grid-area: price; }
+      #quoteTable td:nth-child(5){ grid-area: sub; }
+      #quoteTable td:nth-child(6){ grid-area: ops; }
+      #quoteTable td{ border:0 !important; padding:0; }
+      #quoteTable td::before{ content: attr(data-label); display:block; font-weight:700; color:#555; margin-bottom:4px; }
+      #quoteTable td:nth-child(5) .subtotal{
+        display:inline-block; font-size:1.1rem; font-weight:800; color:#d63384;
+        padding:4px 8px; background:#fff0f6; border:1px solid #f3c2db; border-radius:8px;
+      }
+      #quoteTable td:nth-child(6) .btn{ width:100%; }
+      body{ padding-bottom: 70px; }
     }
 
-    /* === 新增：行動版固定工具列（手機顯示、桌機隱藏） === */
-    .mobile-bar{position:fixed;left:0;right:0;bottom:0;background:#0d6efd;color:#fff;z-index:1000;padding:10px;}
-    .mobile-bar .inner{display:flex;gap:10px;align-items:center;}
-    .mobile-bar .sum{font-weight:800;font-size:1.1rem;flex:1;line-height:1.2;}
-    .mobile-bar .btn{flex:0 0 auto}
-    @media (min-width:768px){ .mobile-bar{display:none;} }
-    /* 避免被固定列遮住底部內容（只在小螢幕時加一點底部間距） */
-    @media (max-width:767.98px){ .container-quote{ padding-bottom:80px; } }
+    /* 手機底部固定工具列（只留產生連結） */
+    .mobile-bottom-bar{
+      position: fixed; left:0; right:0; bottom:0; z-index: 1030;
+      background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%); color:#fff;
+      box-shadow: 0 -6px 20px rgba(13,110,253,.35);
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+      display:none; align-items:center; justify-content:space-between; gap: 10px;
+    }
+    @media (max-width: 768px){ .mobile-bottom-bar{ display:flex; } }
+    .mobile-bottom-bar .total-strong{ font-weight: 900; font-size: 1.05rem; }
+    .mobile-bottom-bar .btn{ margin-bottom:0; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .mobile-bottom-bar .btn-outline-light{ border-color:#fff; color:#fff; }
+
+    .total-banner{
+      background: #fff7e6; border:1px solid #ffd8a8; color:#d9480f;
+      border-radius:12px; padding:10px 14px; display:inline-block; font-weight:900;
+      box-shadow: 0 2px 8px rgba(255,173,77,.15);
+    }
+    .total-banner #total{ font-size:1.4rem; }
   </style>
 </head>
 <body>
 <div class="container-quote">
 
-  <!-- 🔹 LOGO（使用 2.png） -->
   <div class="text-center">
-    <img src="https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png" alt="自然大叔 Logo" class="logo" />
+    <img src="2.png" alt="自然大叔 Logo" class="logo" />
   </div>
 
-  <!-- 🔹 承辦項目 / 報價日期（自動帶入，非輸入欄位） -->
   <div id="quoteInfo" class="quote-info"></div>
 
-  <!-- 🔹 客戶資訊 -->
+  <!-- 客戶資訊 -->
   <h5 class="section-title">客戶資訊</h5>
   <div class="row g-2 mb-3">
     <div class="col-md-6 col-12">
@@ -91,7 +115,7 @@
     </div>
   </div>
 
-  <!-- 🔹 技師資訊 -->
+  <!-- 技師資訊 -->
   <h5 class="section-title">技師人員資訊</h5>
   <div class="row g-2 mb-3">
     <div class="col-md-6 col-12">
@@ -104,7 +128,7 @@
     </div>
   </div>
 
-  <!-- 🔹 預約清洗時間（藍底區塊＋日期/時間選擇） -->
+  <!-- 預約時間 -->
   <h5 class="section-title">預約清洗時間</h5>
   <div id="cleanFullBox" class="p-3">
     🕒 完整預約時間：<span id="cleanFull">尚未選擇</span>
@@ -114,7 +138,7 @@
     </div>
   </div>
 
-  <!-- 🔹 服務項目表格（自動帶價 + 可手動改價） -->
+  <!-- 服務項目 -->
   <h5 class="section-title">服務項目</h5>
   <div class="table-responsive">
     <table id="quoteTable" class="table table-bordered bg-white">
@@ -129,10 +153,8 @@
         </tr>
       </thead>
       <tbody>
-        <!-- 預設一列 -->
         <tr>
           <td>
-            <!-- 服務選單 -->
             <select class="form-select service">
               <option value="">請選擇</option>
               <option value="冷氣清洗">冷氣清洗</option>
@@ -147,7 +169,6 @@
             </select>
           </td>
           <td>
-            <!-- 補充說明選單（僅部份項目會被定價規則使用，其餘純描述） -->
             <select class="form-select option">
               <option value="">請選擇</option>
               <option>分離式（壁掛式）</option>
@@ -178,25 +199,24 @@
   </div>
   <button id="addRow" class="btn btn-primary mb-2">➕ 新增項目</button>
 
-  <!-- 🔹 其他事項（預設可改，會帶進分享連結） -->
+  <!-- 其他事項 -->
   <h5 class="section-title">其他事項</h5>
   <textarea id="otherNotes" class="form-control" rows="3">最終費用將依現場實際狀況進行調整，如有額外項目，將事前與您說明與報價。</textarea>
 
-  <!-- 🔹 合計 -->
-  <h5 class="mt-3">合計：<span id="total">0</span> 元</h5>
+  <!-- 合計 -->
+  <h5 class="mt-3 total-banner">合計：<span id="total">0</span> 元</h5>
 
-  <!-- 🔹 備註與保固條款（固定文字） -->
+  <!-- 保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
   <ol>
-    <li>請於確認本報價內容無誤後，以按下「我同意此報價」按鈕回覆，以利後續安排作業。</li>
+    <li>請於確認本報價內容無誤後，以訊息方式回覆，以利後續安排作業。</li>
     <li>施作過程歡迎您全程在場參與，確保施工過程透明、保障雙方權益。</li>
     <li>施作前皆會進行基本功能檢測，確認機況正常後再進行清洗保養作業。</li>
     <li>施作如有拍攝照片或影片，可免費提供給您做為紀錄與備存參考。</li>
     <li>本服務享有14天保固期，如有異常使用狀況，請立即回報，我們將安排專人處理（※保固不包含因安裝不良或零件自然老化所導致之問題）。</li>
-    <li>若您有任何疑問或需進一步協助，歡迎直接點及下方窗口，直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
   </ol>
 
-  <!-- 🔹 聯絡資訊 + 社群 -->
+  <!-- 聯絡資訊 -->
   <h5 class="section-title">聯絡資訊</h5>
   <div class="row align-items-start">
     <div class="col-md-6 col-12 mb-2">
@@ -212,41 +232,41 @@
     </div>
   </div>
 
-  <!-- 🔹 功能按鈕 -->
+  <!-- 編輯模式：桌機可產生連結 -->
   <div class="mt-3 text-center">
-    <button id="confirmBtn" class="btn btn-outline-primary">✅ 我同意此報價</button>
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
-  <!-- 🔹 產生連結顯示 -->
-  <div id="shareLinkBox" class="link-box d-none text-center"></div>
+  <!-- 唯讀（桌機）同意按鈕：唯讀未封存才顯示 -->
+  <div id="readonlyActions" class="text-center mt-3 d-none">
+    <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
+  </div>
+
+  <div id="shareLinkBox" class="link-box d-none"></div>
 
 </div>
 
-<!-- === 新增：行動版固定工具列（手機才會顯示） === -->
-<div id="mobileBar" class="mobile-bar d-md-none">
-  <div class="inner">
-    <div class="sum">合計：<b id="totalMobile">0</b> 元</div>
-    <button id="confirmBtnMobile" class="btn btn-success btn-lg">我同意此報價</button>
+<!-- 手機底部固定工具列：只保留「產生連結」 -->
+<div class="mobile-bottom-bar d-md-none">
+  <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
+  <div class="d-flex gap-2 flex-grow-1">
+    <button class="btn btn-outline-light btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
   </div>
 </div>
 
 <div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
 
 <script>
-/* ===============================
-   A. 頂部固定資訊：承辦項目＋報價日期
-   =============================== */
+/* ========== 頂部資訊 ========== */
 (function initHeader(){
   const project = "家電清洗服務";
   const d = new Date();
   const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-  document.getElementById("quoteInfo").textContent = `承辦項目：${project} ｜ 報價日期：${dateStr}`;
+  document.getElementById("quoteInfo").innerHTML =
+    `<span class="qi-proj">承辦項目：${project}</span><span class="qi-sep"> ｜ </span><span class="qi-date">報價日期：${dateStr}</span>`;
 })();
 
-/* ===============================
-   B. 預約時間：在藍色區塊即時合成可讀字串
-   =============================== */
+/* ========== 預約時間合成 ========== */
 function updateCleanFull(){
   const dv = document.getElementById("cleanDate").value;
   const tv = document.getElementById("cleanTime").value;
@@ -261,21 +281,14 @@ function updateCleanFull(){
 document.getElementById("cleanDate").addEventListener("change", updateCleanFull);
 document.getElementById("cleanTime").addEventListener("change", updateCleanFull);
 
-/* ===============================
-   C. 自動帶價 + 優惠規則 + 手動覆寫
-   =============================== */
+/* ========== 自動帶價 + 合計 ========== */
 function updateTotals(){
-  let total = 0;
-
-  // 先掃一輪，判斷全表是否「存在冷氣清洗」與「存在自來水管清洗」
-  let hasAC = false, hasPipe = false;
+  let total = 0, hasAC=false, hasPipe=false;
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const s = tr.querySelector(".service")?.value || "";
     if(s === "冷氣清洗") hasAC = true;
     if(s === "自來水管清洗") hasPipe = true;
   });
-
-  // 逐列計算
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const service = tr.querySelector(".service")?.value || "";
     const option  = tr.querySelector(".option")?.value  || "";
@@ -283,14 +296,9 @@ function updateTotals(){
     const priceEl = tr.querySelector(".price");
     const noteEl  = tr.querySelector(".discount-note");
     const subEl   = tr.querySelector(".subtotal");
-
     const qty = Math.max(1, Number(qtyEl?.value || 1));
     let price = Number(priceEl?.value || 0);
-
-    // 清空優惠提示
     if(noteEl) noteEl.textContent = "";
-
-    // 若尚未手動覆寫，套用自動定價規則
     const overridden = priceEl?.dataset.override === "true";
     if(!overridden){
       if(service === "冷氣清洗" && option.includes("分離式")){
@@ -307,32 +315,28 @@ function updateTotals(){
       } else if(service === "臭氧殺菌"){
         price = (qty >= 5) ? 150 : 200;
         if(qty >= 5 && noteEl) noteEl.textContent = "已套用五台以上優惠價";
-      } else if(service === "變形金剛機型"){
-        price = 500;
-      } else if(service === "一體式水盤機型"){
-        price = 500;
-      } else if(service === "超長費用"){
-        price = 300;
-      } else if(service === "水塔清洗"){
+      } else if(service === "變形金剛機型"){ price = 500; }
+      else if(service === "一體式水盤機型"){ price = 500; }
+      else if(service === "超長費用"){ price = 300; }
+      else if(service === "水塔清洗"){
         price = hasPipe ? 800 : 1000;
         if(hasPipe && noteEl) noteEl.textContent = "已套用自來水管清洗優惠價";
       }
-      // 自來水管清洗 → 手動輸入，不自動變動
-      if(priceEl) priceEl.value = price; // 同步到畫面
+      priceEl.value = price;
     }
-
     const subtotal = qty * (Number(priceEl?.value || price) || 0);
-    if(subEl) subEl.textContent = String(subtotal);
+    subEl.textContent = String(subtotal);
     total += subtotal;
   });
-
   document.getElementById("total").textContent = String(total);
-  // === 新增：同步手機固定工具列上的合計 ===
-  const tm = document.getElementById("totalMobile");
-  if (tm) tm.textContent = String(total);
+  const tm = document.getElementById("totalMobile"); if (tm) tm.textContent = String(total);
 }
-
-// 事件委派：改服務/補充/數量 → 解除覆寫、重算
+function applyMobileLabels(){
+  const labels = Array.from(document.querySelectorAll('#quoteTable thead th')).map(th => th.textContent.trim());
+  document.querySelectorAll('#quoteTable tbody tr').forEach(tr=>{
+    Array.from(tr.children).forEach((td, i)=> td.setAttribute('data-label', labels[i] || '') );
+  });
+}
 document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
   if(e.target.classList.contains("service") || e.target.classList.contains("option") || e.target.classList.contains("qty")){
     const rowPrice = e.target.closest("tr").querySelector(".price");
@@ -340,18 +344,10 @@ document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
     updateTotals();
   }
 });
-
-// 手動輸入單價 → 設覆寫旗標，並重算
 document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
-  if(e.target.classList.contains("price")){
-    e.target.dataset.override = "true";
-    updateTotals();
-  } else if(e.target.classList.contains("qty")){
-    updateTotals();
-  }
+  if(e.target.classList.contains("price")){ e.target.dataset.override = "true"; updateTotals(); }
+  else if(e.target.classList.contains("qty")){ updateTotals(); }
 });
-
-// 新增/刪除列
 document.getElementById("addRow").addEventListener("click", ()=>{
   const tbody = document.querySelector("#quoteTable tbody");
   const tr = document.createElement("tr");
@@ -391,67 +387,111 @@ document.getElementById("addRow").addEventListener("click", ()=>{
     <td><input type="number" class="form-control qty" value="1" min="1" /></td>
     <td><input type="number" class="form-control price" value="0" /><small class="discount-note"></small></td>
     <td class="subtotal">0</td>
-    <td><button class="btn btn-danger btn-sm removeRow">刪除</button></td>
-  `;
+    <td><button class="btn btn-danger btn-sm removeRow">刪除</button></td>`;
   tbody.appendChild(tr);
-  updateTotals();
+  updateTotals(); applyMobileLabels();
 });
 document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
   if(e.target.classList.contains("removeRow")){
     e.target.closest("tr").remove();
-    updateTotals();
+    updateTotals(); applyMobileLabels();
   }
 });
 
-/* ===============================
-   D. 確認按鈕（正式：送到 Netlify Functions -> GitHub Issues/Email）
-   =============================== */
-document.getElementById("confirmBtn").addEventListener("click", async ()=>{
+/* ========== 本機保險（舊 #data 連結） ========== */
+function markLocallyLocked(key){ try{ localStorage.setItem(key, "1"); }catch(_){} }
+function isLocallyLocked(key){ try{ return localStorage.getItem(key)==="1"; }catch(_){ return false; } }
+
+/* ========== 送出「我同意此報價」（桌機） ========== */
+async function handleConfirmSubmit(clickedBtn){
+  if (clickedBtn && clickedBtn.disabled) return;
+  const originalText = clickedBtn ? clickedBtn.textContent : "";
   try{
+    if (clickedBtn){ clickedBtn.disabled = true; clickedBtn.textContent = "送出中…"; }
+
     const payload = collectShareData();
-
-    // 若此頁是從 Cloudinary 分享連結打開（#cid=...），順手帶上 public_id 方便對帳
     const hash = location.hash || "";
-    if (hash.startsWith("#cid=")) {
-      payload.cloudinaryId = decodeURIComponent(hash.replace("#cid=",""));
-    }
+    let cid = null;
+    if (hash.startsWith("#cid=")) { cid = decodeURIComponent(hash.replace("#cid=","")); payload.cloudinaryId = cid; }
 
-    const res = await fetch("/api/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+    const res = await fetch("/.netlify/functions/confirm", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
     });
-
     if(!res.ok){
-      const t = await res.text();
-      alert("送出失敗：" + t);
+      const t = await res.text(); alert("送出失敗：" + t);
+      if (clickedBtn){ clickedBtn.disabled = false; clickedBtn.textContent = originalText; }
       return;
     }
+    await res.json();
 
-    const data = await res.json();
-    alert("✅ 已送出同意！我們會盡快與您聯繫。\n紀錄連結：" + (data.issue_url || "（無）"));
+    alert(`✅ 感謝您的確認，我們明日見囉！😊
+為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
+
+若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
+・大型衣櫃、書櫃等重物
+・無法移動之床或沙發
+・其他無法暫移之家具
+
+如有異動也歡迎提前與我們聯繫，謝謝您配合！
+
+— 自然大叔 敬上`);
+
+    if (cid) {
+      try{
+        await fetch("/.netlify/functions/lock", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ id: cid })
+        });
+      }catch(_){}
+      setTimeout(()=>{ location.href = location.pathname + "#cid=" + encodeURIComponent(cid); location.reload(); }, 300);
+      markLocallyLocked("locked:cid:"+cid);
+    } else if (hash.startsWith("#data=")) {
+      markLocallyLocked("locked:data:"+hash);
+      const btn = document.getElementById("confirmBtnDesktop");
+      if (btn){ btn.textContent = "已送出同意"; btn.disabled = true; }
+    }
+
   }catch(err){
     console.error(err);
     alert("送出失敗，請稍後再試。");
+    if (clickedBtn){ clickedBtn.disabled = false; clickedBtn.textContent = originalText; }
   }
-});
+}
+document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
 
-// === 新增：行動版「我同意此報價」按鈕 → 代理觸發同一隻處理器 ===
-document.getElementById("confirmBtnMobile")?.addEventListener("click", ()=>{
-  document.getElementById("confirmBtn")?.click();
-});
+/* ========== 產生分享連結（含一鍵複製） ========== */
+async function handleShareClick(){
+  try{
+    const payload = collectShareData();
+    const res = await fetch("/.netlify/functions/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const t = await res.text(); alert("產生連結失敗：" + t); return; }
+    const data = await res.json();
+    const href = data.share_url || data.pdf_url || "#";
+    const box = document.getElementById("shareLinkBox");
+    box.classList.remove("d-none");
+    box.innerHTML = `
+      <div class="mb-1 fw-bold">專屬報價單網址</div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="shareLinkInput" value="${href}" readonly>
+        <button class="btn btn-primary" id="copyLinkBtn" type="button">📋 一鍵複製</button>
+      </div>
+      <div class="mt-2"><a href="${href}" target="_blank">${href}</a></div>`;
+    document.getElementById('copyLinkBtn')?.addEventListener('click', async ()=>{
+      const link = document.getElementById('shareLinkInput')?.value || href;
+      try{
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(link);
+        else { const ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+        const el=document.getElementById('copyLinkBtn'); const orig=el.textContent; el.textContent="✅ 已複製"; setTimeout(()=> el.textContent=orig,1500);
+      }catch(_){ alert("複製失敗，請手動選取複製"); }
+    });
+  }catch(err){ console.error(err); alert("產生連結失敗，請稍後再試。"); }
+}
+document.getElementById("shareLinkBtn")?.addEventListener("click", handleShareClick);
+document.getElementById('shareLinkBtnMobile')?.addEventListener('click', handleShareClick);
 
-/* ===============================
-   E. 產生分享連結（hash + JSON）
-   =============================== */
-document.getElementById("shareLinkBtn").addEventListener("click", ()=>{
-  const payload = collectShareData();
-  const longUrl = `${location.origin}${location.pathname}#data=${encodeURIComponent(JSON.stringify(payload))}`;
-  const box = document.getElementById("shareLinkBox");
-  box.classList.remove("d-none");
-  box.innerHTML = `<b>專屬報價單網址：</b><br><a href="${longUrl}" target="_blank">${longUrl}</a>`;
-});
-
+/* ========== 序列化 ========== */
 function collectShareData(){
   const items = [];
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
@@ -465,7 +505,7 @@ function collectShareData(){
     });
   });
   return {
-    quoteInfo: document.getElementById("quoteInfo").textContent, // 承辦項目＋報價日期（純文字）
+    quoteInfo: document.getElementById("quoteInfo").textContent.replace(/\s+/g,' ').trim(),
     customer:  document.getElementById("customerName").value,
     phone:     document.getElementById("customerPhone").value,
     address:   document.getElementById("customerAddress").value,
@@ -473,64 +513,111 @@ function collectShareData(){
     techPhone: document.getElementById("technicianPhone").value,
     cleanTime: document.getElementById("cleanFull").textContent,
     otherNotes:document.getElementById("otherNotes").value,
-    items,
-    total: document.getElementById("total").textContent
+    items, total: document.getElementById("total").textContent
   };
 }
 
-/* ===============================
-   F. 唯讀模式載入（客戶點開連結）
-   =============================== */
-(function loadReadOnlyIfHash(){
-  if(!location.hash.startsWith("#data=")) { updateTotals(); return; }
-  try{
-    const data = JSON.parse(decodeURIComponent(location.hash.replace("#data=","")));
-    // 頂部資訊
-    if(data.quoteInfo) document.getElementById("quoteInfo").textContent = data.quoteInfo;
-    // 基本欄位
-    document.getElementById("customerName").value   = data.customer  || "";
-    document.getElementById("customerPhone").value  = data.phone     || "";
-    document.getElementById("customerAddress").value= data.address   || "";
-    document.getElementById("technicianName").value = data.technician|| "";
-    document.getElementById("technicianPhone").value= data.techPhone || "";
-    document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
-    document.getElementById("otherNotes").value     = data.otherNotes|| "";
+/* ========== 唯讀載入（#cid / #data） ========== */
+(async function loadReadOnlyIfHash(){
+  const hash = location.hash || "";
 
-    // 重建表格
-    const tbody = document.querySelector("#quoteTable tbody");
-    tbody.innerHTML = "";
-    (data.items || []).forEach(it=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><select class="form-select service" disabled><option>${it.service||""}</option></select></td>
-        <td><select class="form-select option" disabled><option>${it.option||""}</option></select></td>
-        <td><input type="number" class="form-control qty" value="${it.qty||1}" readonly /></td>
-        <td><input type="number" class="form-control price" value="${it.price||0}" readonly /><small class="discount-note"></small></td>
-        <td class="subtotal">${it.subtotal||0}</td>
-        <td></td>
-      `;
-      tbody.appendChild(tr);
-    });
+  // 新型連結：#cid=完整 public_id（可能含資料夾）
+  if (hash.startsWith("#cid=")) {
+    const cid = decodeURIComponent(hash.replace("#cid=",""));
+    if (isLocallyLocked("locked:cid:"+cid)) { hideConfirmButtons(); }
 
-    // 鎖定所有輸入（唯讀）
-    document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
-    document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
+    try{
+      const r = await fetch(`/.netlify/functions/view?id=${encodeURIComponent(cid)}&ts=${Date.now()}`, { cache:"no-store" });
+      if(!r.ok) throw new Error(await r.text());
+      const payload = await r.json();
 
-    // 隱藏新增/分享按鈕（客戶只需查看與同意）
-    document.getElementById("addRow").style.display = "none";
-    document.getElementById("shareLinkBtn").style.display = "none";
+      const data = payload?.data || {};
+      const locked = !!payload?.locked;
 
-    // === 新增：唯讀檢視時，隱藏行動版同意按鈕（避免再次送出） ===
-    const mBtn = document.getElementById("confirmBtnMobile");
-    if (mBtn) mBtn.style.display = "none";
-
-    // 更新總價
-    updateTotals();
-  }catch(err){
-    console.error("讀取分享資料失敗：", err);
-    updateTotals();
+      applyReadOnlyData(data); applyMobileLabels();
+      setReadonlyButtonsVisibility(!locked);
+      if (locked){ showLockedNotice(); hideConfirmButtons(); }
+      return;
+    }catch(e){
+      console.error("讀取分享資料失敗：", e);
+      alert("此連結已失效或資料讀取失敗。");
+      forceReadOnlyBlank(); // ⬅️ 不再顯示已封存
+      hideConfirmButtons();
+      return;
+    }
   }
+
+  // 舊型連結：#data=...
+  if (hash.startsWith("#data=")) {
+    try{
+      const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
+      applyReadOnlyData(data); applyMobileLabels();
+      if (isLocallyLocked("locked:data:"+hash)) { hideConfirmButtons(); showLockedNotice(); }
+      else { setReadonlyButtonsVisibility(true); }
+      return;
+    }catch(err){ console.error("讀取分享資料失敗：", err); updateTotals(); applyMobileLabels(); return; }
+  }
+
+  // 無 hash：編輯模式
+  updateTotals(); applyMobileLabels();
 })();
+
+function setReadonlyButtonsVisibility(canConfirm){
+  const shareDesk = document.getElementById("shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
+  const shareM = document.getElementById("shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
+  const ro = document.getElementById("readonlyActions"); if (ro) ro.classList.toggle("d-none", !canConfirm);
+}
+function hideConfirmButtons(){
+  const d = document.getElementById("confirmBtnDesktop");
+  const ro = document.getElementById("readonlyActions");
+  if (d){ d.style.display = "none"; }
+  if (ro){ ro.classList.add("d-none"); }
+}
+function applyReadOnlyData(data){
+  if(data.quoteInfo){
+    const qi = document.getElementById("quoteInfo");
+    const m = data.quoteInfo.match(/承辦項目：([^｜\s]+).*?報價日期：(\d{4}\/\d{2}\/\d{2})/);
+    qi.innerHTML = m ? `<span class="qi-proj">承辦項目：${m[1]}</span><span class="qi-sep"> ｜ </span><span class="qi-date">報價日期：${m[2]}</span>` : data.quoteInfo;
+  }
+  document.getElementById("customerName").value   = data.customer  || "";
+  document.getElementById("customerPhone").value  = data.phone     || "";
+  document.getElementById("customerAddress").value= data.address   || "";
+  document.getElementById("technicianName").value = data.technician|| "";
+  document.getElementById("technicianPhone").value= data.techPhone || "";
+  document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
+  document.getElementById("otherNotes").value     = data.otherNotes|| "";
+
+  const tbody = document.querySelector("#quoteTable tbody"); tbody.innerHTML = "";
+  (data.items || []).forEach(it=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><select class="form-select service" disabled><option>${it.service||""}</option></select></td>
+      <td><select class="form-select option" disabled><option>${it.option||""}</option></select></td>
+      <td><input type="number" class="form-control qty" value="${it.qty||1}" readonly /></td>
+      <td><input type="number" class="form-control price" value="${it.price||0}" readonly /><small class="discount-note"></small></td>
+      <td class="subtotal">${it.subtotal||0}</td>
+      <td></td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
+  document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
+  ["addRow","shareLinkBtn","shareLinkBtnMobile"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
+  updateTotals();
+}
+function showLockedNotice(){
+  const box = document.createElement('div');
+  box.className = 'alert alert-success mt-2';
+  box.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
+  document.querySelector('.container-quote').prepend(box);
+}
+function forceReadOnlyBlank(){
+  document.querySelectorAll("input, textarea, select").forEach(el=>{
+    if (el.tagName === "SELECT") el.setAttribute("disabled", true);
+    else el.setAttribute("readonly", true);
+  });
+  ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnDesktop","readonlyActions"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
+}
 </script>
 </body>
 </html>
