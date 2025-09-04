@@ -22,14 +22,10 @@ export async function handler(event) {
     const auth = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
     id = normalizeId(id);
 
-    const candidates = uniq([
-      id,
-      !id.includes("/") ? `${FOLDER}/${id}` : null
-    ].filter(Boolean));
+    const candidates = uniq([ id, !id.includes("/") ? `${FOLDER}/${id}` : null ].filter(Boolean));
 
     let meta = null, rtype = null, dtype = null, publicId = null;
 
-    // 1) 先用 Admin API 全組合嘗試
     outer:
     for (const rt of RTYPES) {
       for (const dt of DTYPES) {
@@ -40,7 +36,6 @@ export async function handler(event) {
       }
     }
 
-    // 2) Admin 全找不到 → 用 Search API 搜尋（不指定 type，可跨 type）
     if (!meta) {
       const found = await searchAny(cloud, auth, id, FOLDER);
       if (found) {
@@ -71,68 +66,32 @@ export async function handler(event) {
   }
 }
 
-/* ---------------- helpers ---------------- */
-
-function normalizeId(id) {
-  try { id = decodeURIComponent(id); } catch {}
-  id = id.replace(/^#?cid=/i, "");
-  id = id.replace(/^\/+|\/+$/g, "");
-  id = id.replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i, "");
-  return id;
-}
-
-async function getAdminMeta(cloud, auth, rtype, dtype, publicId, throwOnError = false) {
+/* helpers */
+function normalizeId(id){ try{ id = decodeURIComponent(id); }catch{} return id.replace(/^#?cid=/i,"").replace(/^\/+|\/+$/g,"").replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i,""); }
+async function getAdminMeta(cloud, auth, rtype, dtype, publicId, throwOnError=false){
   const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/${rtype}/${dtype}/${encodeURIComponent(publicId)}`;
-  const r = await fetch(url, {
-    headers: {
-      Authorization: auth,
-      "Cache-Control": "no-store",
-      "Pragma": "no-cache"
-    }
-  });
+  const r = await fetch(url, { headers: { Authorization: auth, "Cache-Control":"no-store", "Pragma":"no-cache" } });
   if (r.status === 404) return null;
-  if (!r.ok) {
-    const t = await safeText(r);
-    if (throwOnError) throw new Error(`Admin API error (${rtype}/${dtype}/${publicId}): ${t}`);
-    return null;
-  }
+  if (!r.ok){ const t = await safeText(r); if (throwOnError) throw new Error(`Admin API error (${rtype}/${dtype}/${publicId}): ${t}`); return null; }
   return await r.json();
 }
-
-async function searchAny(cloud, auth, id, folder) {
+async function searchAny(cloud, auth, id, folder){
   const expr = [
     `public_id="${escapeExpr(id)}"`,
     `public_id="${escapeExpr(`${folder}/${id}`)}"`,
     `filename="${escapeExpr(basename(id))}"`
   ].join(" OR ");
-
-  const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/search`;
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: auth,
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-      "Pragma": "no-cache"
-    },
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/resources/search`, {
+    method:"POST",
+    headers:{ Authorization: auth, "Content-Type":"application/json", "Cache-Control":"no-store", "Pragma":"no-cache" },
     body: JSON.stringify({ expression: expr, max_results: 1 })
   });
   if (!r.ok) return null;
   const json = await r.json();
   return (json?.resources || [])[0] || null;
 }
-
-function basename(s){ const i = s.lastIndexOf("/"); return i>=0 ? s.slice(i+1) : s; }
-function escapeExpr(s){ return s.replace(/(["\\])/g, "\\$1"); }
+function basename(s){ const i=s.lastIndexOf("/"); return i>=0?s.slice(i+1):s; }
+function escapeExpr(s){ return s.replace(/(["\\])/g,"\\$1"); }
 function uniq(a){ return Array.from(new Set(a)); }
-
-function resp(statusCode, json, noStore = false) {
-  const h = { "Content-Type": "application/json" };
-  if (noStore) {
-    h["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
-    h["Pragma"] = "no-cache"; h["Expires"] = "0";
-  }
-  return { statusCode, headers: h, body: JSON.stringify(json) };
-}
-
+function resp(statusCode,json,noStore=false){ const h={"Content-Type":"application/json"}; if(noStore){ h["Cache-Control"]="no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; h["Pragma"]="no-cache"; h["Expires"]="0"; } return { statusCode, headers:h, body:JSON.stringify(json) }; }
 async function safeText(res){ try{ return await res.text(); }catch{ return "(no body)"; } }
