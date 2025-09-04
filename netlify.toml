@@ -1,4 +1,9 @@
 [[redirects]]
+  from = "/api/confirm"
+  to   = "/.netlify/functions/confirm"
+  status = 200
+
+[[redirects]]
   from = "/api/share"
   to   = "/.netlify/functions/share"
   status = 200
