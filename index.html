@@ -18,7 +18,7 @@
     /* ✅ 背景浮水印：使用 2.png，800px 間距、-45度、透明 0.02 */
     .container-quote::before{
       content:""; position:absolute; inset:0;
-      background-image:url('https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png');
+      background-image:url('2.png');
       background-repeat:repeat; background-size:800px;
       transform:rotate(-45deg); opacity:.02; z-index:0;
     }
@@ -29,6 +29,11 @@
 
     /* 頂部固定資訊（承辦項目 / 報價日期） */
     .quote-info { text-align:center; font-weight:700; color:#333; margin-bottom:14px; }
+    .quote-info .qi-proj, .quote-info .qi-date, .quote-info .qi-sep { display:inline; }
+    @media (max-width:576px){
+      .quote-info .qi-proj, .quote-info .qi-date { display:block; }
+      .quote-info .qi-sep { display:none; }
+    }
 
     .section-title { margin-top:15px; font-weight:700; border-bottom:2px solid #444; padding-bottom:4px; }
 
@@ -43,6 +48,7 @@
 
     /* 產生連結顯示區 */
     .link-box{ background:#eef6ff; border-radius:6px; padding:10px; margin-top:12px; word-wrap:break-word; }
+    .link-box .input-group input { font-size:.95rem; }
 
     .footer-bar{ background:#dbe9f6; padding:12px; text-align:center; margin-top:20px; border-top:2px solid #bbb; }
 
@@ -96,17 +102,19 @@
       /* 操作按鈕滿版 */
       #quoteTable td:nth-child(6) .btn{ width:100%; }
       /* 避免固定底欄遮住內容 */
-      body{ padding-bottom: 80px; }
+      body{ padding-bottom: 90px; }
     }
 
     /* ─────────────────────────────
-       B. 手機底部固定工具列
+       B. 手機底部固定工具列（加強明顯度）
        ───────────────────────────── */
     .mobile-bottom-bar{
       position: fixed; left:0; right:0; bottom:0; z-index: 1030;
-      background: rgba(255,255,255,.96);
-      backdrop-filter: saturate(180%) blur(8px);
-      border-top:1px solid #ddd; padding:10px 12px;
+      background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%);
+      color:#fff;
+      box-shadow: 0 -6px 20px rgba(13,110,253,.35);
+      border-top:0;
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
       display:none; align-items:center; justify-content:space-between;
       gap: 10px;
     }
@@ -114,7 +122,16 @@
       .mobile-bottom-bar{ display:flex; }
     }
     .mobile-bottom-bar .total-strong{
-      font-weight: 900; font-size: 1.1rem;
+      font-weight: 900; font-size: 1.15rem;
+    }
+    .mobile-bottom-bar .btn{
+      margin-bottom:0; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .mobile-bottom-bar .btn-primary{
+      background:#fff; color:#0d6efd; border-color:#fff;
+    }
+    .mobile-bottom-bar .btn-outline-secondary{
+      border-color:#fff; color:#fff;
     }
 
     /* ─────────────────────────────
@@ -133,10 +150,10 @@
 
   <!-- 🔹 LOGO（使用 2.png） -->
   <div class="text-center">
-    <img src="https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png" alt="自然大叔 Logo" class="logo" />
+    <img src="2.png" alt="自然大叔 Logo" class="logo" />
   </div>
 
-  <!-- 🔹 承辦項目 / 報價日期（自動帶入，非輸入欄位） -->
+  <!-- 🔹 承辦項目 / 報價日期（自動帶入，行動版自動分兩行） -->
   <div id="quoteInfo" class="quote-info"></div>
 
   <!-- 🔹 客戶資訊 -->
@@ -277,14 +294,13 @@
     </div>
   </div>
 
-  <!-- 🔹 功能按鈕（依需求移除「我同意此報價」；保留「產生連結」） -->
+  <!-- 🔹 功能按鈕（已移除桌機的「我同意此報價」，保留「產生連結」） -->
   <div class="mt-3 text-center">
-    <!-- <button id="confirmBtn" class="btn btn-outline-primary">✅ 我同意此報價</button>  已移除 -->
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
-  <!-- 🔹 產生連結顯示 -->
-  <div id="shareLinkBox" class="link-box d-none text-center"></div>
+  <!-- 🔹 產生連結顯示（含一鍵複製） -->
+  <div id="shareLinkBox" class="link-box d-none"></div>
 
 </div>
 
@@ -301,13 +317,18 @@
 
 <script>
 /* ===============================
-   A. 頂部固定資訊：承辦項目＋報價日期
+   A. 頂部固定資訊：承辦項目＋報價日期（行動版自動分兩行）
    =============================== */
 (function initHeader(){
   const project = "家電清洗服務";
   const d = new Date();
   const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-  document.getElementById("quoteInfo").textContent = `承辦項目：${project} ｜ 報價日期：${dateStr}`;
+  const qi = document.getElementById("quoteInfo");
+  qi.innerHTML = `
+    <span class="qi-proj">承辦項目：${project}</span>
+    <span class="qi-sep"> ｜ </span>
+    <span class="qi-date">報價日期：${dateStr}</span>
+  `;
 })();
 
 /* ===============================
@@ -482,10 +503,8 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
    D. 「我同意此報價」提交（行動版快捷鍵可用；桌機已移除按鈕）
    =============================== */
 async function handleConfirmSubmit(clickedBtn){
-  // clickedBtn 可能是手機底欄的按鈕
   if (clickedBtn && clickedBtn.disabled) return;
   const originalText = clickedBtn ? clickedBtn.textContent : "";
-
   try{
     if (clickedBtn){
       clickedBtn.disabled = true;
@@ -536,7 +555,7 @@ document.getElementById('confirmBtnMobile')?.addEventListener('click', function(
 });
 
 /* ===============================
-   E. 產生分享連結
+   E. 產生分享連結（含一鍵複製）
    - 編輯模式：可用（桌機底部按鈕＋手機快捷）
    - 唯讀模式：隱藏（包含手機快捷）
    =============================== */
@@ -559,7 +578,36 @@ async function handleShareClick(){
     const href = data.share_url || data.pdf_url || "#";
     const box = document.getElementById("shareLinkBox");
     box.classList.remove("d-none");
-    box.innerHTML = `<b>專屬報價單網址：</b><br><a href="${href}" target="_blank">${href}</a>`;
+    box.innerHTML = `
+      <div class="mb-1 fw-bold">專屬報價單網址</div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="shareLinkInput" value="${href}" readonly>
+        <button class="btn btn-primary" id="copyLinkBtn" type="button">📋 一鍵複製</button>
+      </div>
+      <div class="mt-2"><a href="${href}" target="_blank">${href}</a></div>
+    `;
+
+    // 綁定一鍵複製
+    document.getElementById('copyLinkBtn')?.addEventListener('click', async ()=>{
+      const link = document.getElementById('shareLinkInput')?.value || href;
+      try{
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(link);
+        } else {
+          // 退而求其次
+          const ta = document.createElement('textarea');
+          ta.value = link; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        const btn = document.getElementById('copyLinkBtn');
+        const orig = btn.textContent;
+        btn.textContent = "✅ 已複製";
+        setTimeout(()=> btn.textContent = orig, 1500);
+      }catch(e){
+        alert("複製失敗，請手動選取複製");
+      }
+    });
+
     window._lastShare = data;
   }catch(err){
     console.error(err);
@@ -586,7 +634,7 @@ function collectShareData(){
     });
   });
   return {
-    quoteInfo: document.getElementById("quoteInfo").textContent,
+    quoteInfo: document.getElementById("quoteInfo").textContent.replace(/\s+/g,' ').trim(),
     customer:  document.getElementById("customerName").value,
     phone:     document.getElementById("customerPhone").value,
     address:   document.getElementById("customerAddress").value,
@@ -648,8 +696,23 @@ function collectShareData(){
 })();
 
 function applyReadOnlyData(data){
-  // 頂部資訊
-  if(data.quoteInfo) document.getElementById("quoteInfo").textContent = data.quoteInfo;
+  // 頂部資訊（保持原字樣）
+  if(data.quoteInfo){
+    // 若從舊資料帶回完整字串，直接塞回；保留行動版換行的 CSS 行為
+    const qi = document.getElementById("quoteInfo");
+    // 嘗試拆分
+    const m = data.quoteInfo.match(/承辦項目：([^｜\s]+).*?報價日期：(\d{4}\/\d{2}\/\d{2})/);
+    if (m){
+      qi.innerHTML = `
+        <span class="qi-proj">承辦項目：${m[1]}</span>
+        <span class="qi-sep"> ｜ </span>
+        <span class="qi-date">報價日期：${m[2]}</span>
+      `;
+    }else{
+      qi.textContent = data.quoteInfo;
+    }
+  }
+
   // 基本欄位
   document.getElementById("customerName").value   = data.customer  || "";
   document.getElementById("customerPhone").value  = data.phone     || "";
