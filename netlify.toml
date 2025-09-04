@@ -1,8 +1,9 @@
-[build]
-  publish = "/"
-  functions = "netlify/functions"
+[[redirects]]
+  from = "/api/share"
+  to   = "/.netlify/functions/share"
+  status = 200
 
 [[redirects]]
-  from = "/api/confirm"
-  to = "/.netlify/functions/confirm"
+  from = "/api/view"
+  to   = "/.netlify/functions/view"
   status = 200
