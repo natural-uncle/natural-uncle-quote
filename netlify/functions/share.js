@@ -20,33 +20,19 @@ export async function handler(event) {
       return { statusCode: 500, body: "Missing Cloudinary config" };
     }
 
-    // 生成 public_id（例：quotes/q-20250904-ab12cd）
+    // 只用檔名，別把 folder 放進 public_id
     const rnd = Math.random().toString(36).slice(2, 8);
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const publicId = `${folder}/q-${today}-${rnd}`;
+    const publicId = `q-${today}-${rnd}`; // <-- 不含資料夾
 
-    // 依 Cloudinary 規範製作簽名（將要上傳的參數按字母排序 → 用 & 串接 → + API_SECRET → sha1）
+    // 簽名（folder + public_id + timestamp + format）
     const timestamp = Math.floor(Date.now() / 1000);
-
-    // 參與簽名的參數（不要包含 file、api_key、resource_type、cloud_name）
-    const params = {
-      folder,                       // quotes
-      public_id: publicId,          // quotes/q-xxxxxx
-      timestamp,                    // 秒
-      format: "json"                // 希望輸出 .json
-    };
-
-    // 排序並串成 querystring
-    const sortedKeys = Object.keys(params).sort();
-    const toSign = sortedKeys.map(k => `${k}=${params[k]}`).join("&");
-
-    // 簽名
+    const params = { folder, public_id: publicId, timestamp, format: "json" };
+    const sorted = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join("&");
     const crypto = await import("node:crypto");
-    const signature = crypto.createHash("sha1")
-      .update(toSign + apiSecret)
-      .digest("hex");
+    const signature = crypto.createHash("sha1").update(sorted + apiSecret).digest("hex");
 
-    // 準備上傳
+    // 上傳
     const uploadUrl = `https://api.cloudinary.com/v1_1/${cloud}/raw/upload`;
     const form = new URLSearchParams();
     form.set("file", `data:application/json;base64,${Buffer.from(JSON.stringify(payload)).toString("base64")}`);
@@ -57,19 +43,15 @@ export async function handler(event) {
     form.set("format", "json");
     form.set("signature", signature);
 
-    const res = await fetch(uploadUrl, { method: "POST", body: form });
-    const data = await res.json();
-    if (!res.ok) {
-      return { statusCode: 500, body: `Cloudinary upload error: ${JSON.stringify(data)}` };
-    }
+    const r = await fetch(uploadUrl, { method: "POST", body: form });
+    const j = await r.json();
+    if (!r.ok) return { statusCode: 500, body: `Cloudinary upload error: ${JSON.stringify(j)}` };
 
-    // 回傳短連結（用 #cid=短碼）
+    // 回傳短碼（就是 public_id 本身），以及分享網址
     const host = event.headers["x-forwarded-host"] || event.headers.host || "natural-uncle-quote.netlify.app";
-    const proto = (event.headers["x-forwarded-proto"] || "https");
+    const proto = event.headers["x-forwarded-proto"] || "https";
     const base = `${proto}://${host}/`;
-
-    // 短碼只保留最後一段（q-xxxxxx-xxxx）
-    const cid = publicId.split("/").pop();
+    const cid = publicId; // e.g. q-20250904-abc123
     const shareUrl = `${base}#cid=${encodeURIComponent(cid)}`;
 
     return {
