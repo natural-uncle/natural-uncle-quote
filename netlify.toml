@@ -1,16 +1,19 @@
-[[redirects]]  # confirm
-  from = "/api/confirm"
-  to   = "/.netlify/functions/confirm"
-  status = 200
-[[redirects]]  # share
-  from = "/api/share"
-  to   = "/.netlify/functions/share"
-  status = 200
-[[redirects]]  # view
+[[redirects]]
   from = "/api/view"
   to   = "/.netlify/functions/view"
   status = 200
-[[redirects]]  # lock
+
+[[redirects]]
   from = "/api/lock"
   to   = "/.netlify/functions/lock"
+  status = 200
+
+[[redirects]]
+  from = "/api/share"
+  to   = "/.netlify/functions/share"
+  status = 200
+
+[[redirects]]
+  from = "/api/confirm"
+  to   = "/.netlify/functions/confirm"
   status = 200
