@@ -471,6 +471,8 @@ async function handleConfirmSubmit(clickedBtn){
 }
 document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
 
+
+document.getElementById('confirmBtnMobile')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
 /* ========== 產生分享連結（含一鍵複製） ========== */
 async function handleShareClick(){
   try{
@@ -575,7 +577,11 @@ function collectShareData(){
 })();
 
 function setReadonlyButtonsVisibility(canConfirm){
-  const ro = document.getElementById("readonlyActions");
+  const shareDesk = document.getElementById("shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
+  const shareM   = document.getElementById("shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
+  const ro       = document.getElementById("readonlyActions"); if (ro) ro.classList.toggle("d-none", !canConfirm);
+  const mConfirm = document.getElementById("confirmBtnMobile");   if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm);
+  const dConfirm = document.getElementById("confirmBtnDesktop");  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
 }
 function hideConfirmButtons(){
   const d = document.getElementById("confirmBtnDesktop");
