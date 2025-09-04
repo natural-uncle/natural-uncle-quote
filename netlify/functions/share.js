@@ -1,62 +1,115 @@
 // netlify/functions/share.js
-// 接收前端 JSON，存成 Cloudinary raw 檔，回傳分享網址（#cid=public_id）
+// POST  /api/share  → 把前端傳來的報價 JSON 上傳到 Cloudinary (resource_type=raw, format=json)
+//                      產生短ID (cid) 並回傳 { cloudinaryId, cid, url, secure_url }
+// GET   /api/share?cid=... → 從 Cloudinary 讀回 JSON 內容（唯讀頁會用）
 
 import crypto from "crypto";
 
-export async function handler(event){
-  try{
-    if (event.httpMethod !== "POST") return resp(405, "Method Not Allowed");
-    const body = JSON.parse(event.body || "{}");
+export async function handler(event) {
+  try {
+    if (event.httpMethod === "OPTIONS") {
+      return cors(200, "ok"); // CORS preflight
+    }
 
     const cloud = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
-    const FOLDER = process.env.CLOUDINARY_FOLDER || "quotes";
-    const SITE_BASE_URL = process.env.SITE_BASE_URL || getBaseUrl(event) || "";
+    const folderRaw = (process.env.CLOUDINARY_UPLOAD_FOLDER || "").replace(/^\/+|\/+$/g, "");
 
-    if (!cloud || !apiKey || !apiSecret) return resp(500, "Missing Cloudinary config");
+    if (!cloud || !apiKey || !apiSecret) {
+      return json(500, { error: "Cloudinary env missing: CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET" });
+    }
 
-    // 產生 id：q-YYYYMMDD-xxxxxx
-    const d = new Date();
-    const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
-    const rid = `q-${ymd}-${Math.random().toString(36).slice(2,8)}`;
-    const public_id = `${FOLDER}/${rid}`;
+    if (event.httpMethod === "POST") {
+      const payload = JSON.parse(event.body || "{}");
 
-    const fileData = Buffer.from(JSON.stringify(body, null, 2)).toString("base64");
-    const timestamp = Math.floor(Date.now()/1000);
+      // 產生短ID（避免太長）
+      const shortId = "q" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const publicId = (folderRaw ? `${folderRaw}/` : "") + shortId;
 
-    // 簽名（不含 file）
-    const toSign = `public_id=${public_id}&timestamp=${timestamp}${apiSecret}`;
-    const signature = crypto.createHash("sha1").update(toSign).digest("hex");
+      // 上傳到 Cloudinary：raw 資源、json 格式（讓 URL 可帶 .json）
+      const jsonStr = JSON.stringify(payload);
+      const dataUri = "data:application/json;base64," + Buffer.from(jsonStr, "utf8").toString("base64");
 
-    const form = new URLSearchParams();
-    form.append("file", `data:application/json;base64,${fileData}`);
-    form.append("public_id", public_id);
-    form.append("timestamp", String(timestamp));
-    form.append("api_key", apiKey);
-    form.append("signature", signature);
-    // resource_type 在 URL 指定為 raw
+      const timestamp = Math.floor(Date.now() / 1000);
 
-    const upUrl = `https://api.cloudinary.com/v1_1/${cloud}/raw/upload`;
-    const r = await fetch(upUrl, { method:"POST", body: form });
-    const j = await r.json();
-    if (!r.ok) return resp(r.status, JSON.stringify(j));
+      // 簽名：只簽 format / public_id / timestamp（避免 folder 參數，直接把 folder 放進 public_id）
+      const toSign = `format=json&public_id=${publicId}&timestamp=${timestamp}`;
+      const signature = crypto.createHash("sha1").update(toSign + apiSecret).digest("hex");
 
-    const share_url = SITE_BASE_URL ? `${SITE_BASE_URL}#cid=${encodeURIComponent(public_id)}` : `#cid=${encodeURIComponent(public_id)}`;
-    return json(200, { ok:true, public_id, share_url, secure_url: j.secure_url });
+      // 呼叫 Cloudinary 上傳 API
+      const urlUpload = `https://api.cloudinary.com/v1_1/${cloud}/raw/upload`;
+      const body = new URLSearchParams();
+      body.set("file", dataUri);
+      body.set("api_key", apiKey);
+      body.set("timestamp", String(timestamp));
+      body.set("public_id", publicId);
+      body.set("format", "json");
+      body.set("signature", signature);
 
-  }catch(e){
+      const up = await fetch(urlUpload, { method: "POST", body });
+      const upTxt = await up.text();
+      if (!up.ok) {
+        return json(500, { error: "cloudinary upload failed", detail: upTxt });
+      }
+      const upJ = safeJson(upTxt);
+
+      const result = {
+        cloudinaryId: publicId,
+        cid: shortId, // 回傳短ID，前端會用 #cid=<這個>
+        url: upJ.url || null,
+        secure_url: upJ.secure_url || null,
+      };
+      return json(200, result);
+    }
+
+    if (event.httpMethod === "GET") {
+      const cid = getParam(event.queryStringParameters, "cid");
+      if (!cid) return json(400, { error: "cid is required" });
+
+      const publicId = (process.env.CLOUDINARY_UPLOAD_FOLDER ? `${(process.env.CLOUDINARY_UPLOAD_FOLDER || "").replace(/^\/+|\/+$/g,"")}/` : "") + cid;
+
+      // 嘗試兩種讀取方式：先帶 .json，再不帶
+      const rawBase = `https://res.cloudinary.com/${cloud}/raw/upload/${encodeURIComponent(publicId)}`;
+      const urlJson = rawBase + ".json";
+      const r1 = await fetch(urlJson);
+      if (r1.ok) {
+        const txt = await r1.text();
+        const data = safeJson(txt);
+        if (data && typeof data === "object") return corsJson(200, data);
+      }
+      const r2 = await fetch(rawBase);
+      if (r2.ok) {
+        const txt = await r2.text();
+        const data = safeJson(txt);
+        if (data && typeof data === "object") return corsJson(200, data);
+      }
+      return corsJson(404, { error: "not found or not json" });
+    }
+
+    return cors(405, "Method Not Allowed");
+  } catch (e) {
     return json(500, { error: String(e?.message || e) });
   }
 }
 
-function resp(status, text){ return { statusCode: status, body: text }; }
-function json(status, obj){ return { statusCode: status, headers: { "Content-Type":"application/json" }, body: JSON.stringify(obj) }; }
-function getBaseUrl(event){
-  try{
-    const proto = (event.headers["x-forwarded-proto"] || "https");
-    const host = event.headers["x-forwarded-host"] || event.headers["host"];
-    const path = event.path && event.path.endsWith("/") ? event.path : "/";
-    return host ? `${proto}://${host}${path}`.replace(/\/+$/,"/") : "";
-  }catch{ return ""; }
+/* -------- Helpers -------- */
+function getParam(qs, k){ return qs && (qs[k] ?? qs[k?.toLowerCase?.()]) || null; }
+function json(status, obj){
+  return { statusCode: status, headers: { "Content-Type":"application/json" }, body: JSON.stringify(obj) };
 }
+function cors(status, text){
+  return { statusCode: status, headers: corsHeaders({"Content-Type":"text/plain"}), body: String(text) };
+}
+function corsJson(status, obj){
+  return { statusCode: status, headers: corsHeaders({"Content-Type":"application/json"}), body: JSON.stringify(obj) };
+}
+function corsHeaders(extra){
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    ...extra
+  };
+}
+function safeJson(txt){ try{ return JSON.parse(txt); }catch{ return null; } }
