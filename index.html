@@ -396,7 +396,7 @@ document.getElementById("confirmBtn").addEventListener("click", async ()=>{
     }
 
     const data = await res.json();
-    alert("✅ 已送出同意！我們會盡快與您聯繫。\n紀錄連結：" + (data.issue_url || "（無）"));
+    alert("✅ 已送出同意！感謝您的察看，此將留存紀錄");
   }catch(err){
     console.error(err);
     alert("送出失敗，請稍後再試。");
