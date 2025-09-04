@@ -1,31 +1,45 @@
 // netlify/functions/confirm.js
-// 1) 產 Markdown 報價內容 → 建 GitHub Issue（可選）
-// 2) 寄 Email（優先 Resend；其次 Brevo；兩者都沒設就略過郵件）
-// 必要環境變數：
-//   GITHUB_TOKEN (可選)    GITHUB_REPO="owner/repo" (可選)
+// 功能：
+// 1) 產 Markdown → （可選）建立 GitHub Issue
+// 2) 寄信：優先 Resend，其次 Brevo
+// 3) 回傳郵件送出結果 (mail_ok / mail_provider / mail_response) 方便除錯
+//
+// 需要的環境變數：
+//   CLOUDINARY_*  (與本檔無關，但整站會用到)
+//   GITHUB_TOKEN (可選)       GITHUB_REPO="owner/repo" (可選)
 //   RESEND_API_KEY (可選)  或  BREVO_API_KEY (可選)
-//   FROM_EMAIL (寄件人),   TO_EMAIL (收件人)
-//   SITE_BASE_URL (可選，用於信件中的查看連結)
+//   EMAIL_FROM 或 FROM_EMAIL         ← 寄件人（建議用已驗證網域的信箱）
+//   EMAIL_TO   或 TO_EMAIL           ← 收件人
+//   EMAIL_SUBJECT_PREFIX (可選)     ← 主旨前綴（例如「[線上報價]」）
+//   EMAIL_SENDER_NAME 或 SENDER_NAME (可選) ← 寄件顯示名稱
+//   SITE_BASE_URL (可選)            ← 信件內顯示「開啟網站」連結
 
 export async function handler(event){
   try{
     if (event.httpMethod !== "POST") return resp(405, "Method Not Allowed");
     const data = JSON.parse(event.body || "{}");
-
     const SITE_BASE_URL = process.env.SITE_BASE_URL || "";
-    const { issueUrl } = await maybeCreateIssue(data);
-    await maybeSendEmail(data, issueUrl, SITE_BASE_URL);
 
-    return json(200, { ok:true, issue_url: issueUrl || null });
+    // 建 Issue（可選）
+    const { issueUrl } = await maybeCreateIssue(data);
+
+    // 寄信（會回傳詳細結果）
+    const mailResult = await maybeSendEmail(data, issueUrl, SITE_BASE_URL);
+
+    return json(200, {
+      ok: true,
+      issue_url: issueUrl || null,
+      ...mailResult, // mail_ok, mail_provider, mail_response
+    });
   }catch(e){
     return json(500, { error: String(e?.message || e) });
   }
 }
 
-/* ---------- GitHub Issue ---------- */
+/* ---------- GitHub Issue（可選） ---------- */
 async function maybeCreateIssue(payload){
   const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO; // "owner/name"
+  const repo = process.env.GITHUB_REPO; // "owner/repo"
   if (!token || !repo) return { issueUrl: null };
 
   const [owner, name] = repo.split("/");
@@ -46,8 +60,7 @@ async function maybeCreateIssue(payload){
   });
 
   if (!r.ok) {
-    const t = await r.text();
-    console.warn("[confirm] GitHub issue failed:", t);
+    console.warn("[confirm] GitHub issue failed:", await safeText(r));
     return { issueUrl: null };
   }
 
@@ -79,52 +92,83 @@ ${p.otherNotes||""}
 `;
 }
 
-/* ---------- Email ---------- */
+/* ---------- Email：Resend（優先）→ Brevo ---------- */
 async function maybeSendEmail(payload, issueUrl, siteBase){
-  const FROM = process.env.FROM_EMAIL;
-  const TO = process.env.TO_EMAIL;
-  if (!FROM || !TO) return;
+  // 相容兩種命名
+  const FROM = (process.env.FROM_EMAIL || process.env.EMAIL_FROM || "").trim();
+  const TO = (process.env.TO_EMAIL || process.env.EMAIL_TO || "").trim();
+  const SENDER_NAME = process.env.SENDER_NAME || process.env.EMAIL_SENDER_NAME || "";
+  const SUBJECT_PREFIX = process.env.EMAIL_SUBJECT_PREFIX || "";
 
-  const subject = `客戶同意報價｜${payload.customer||"未填"}｜合計 ${payload.total||0} 元`;
+  if (!FROM || !TO) {
+    return { mail_ok:false, mail_provider:null, mail_response:"FROM_EMAIL/EMAIL_FROM 或 TO_EMAIL/EMAIL_TO 未設定" };
+  }
+
+  const subject = `${SUBJECT_PREFIX ? SUBJECT_PREFIX + " " : ""}客戶同意報價｜${payload.customer||"未填"}｜合計 ${payload.total||0} 元`;
   const md = toMarkdown(payload);
   const html = mdToHtml(md, issueUrl, siteBase);
+  const text = stripHtml(html);
 
+  // 首選：Resend
   if (process.env.RESEND_API_KEY) {
     try{
       const r = await fetch("https://api.resend.com/emails", {
         method:"POST",
         headers:{ "Authorization": `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type":"application/json" },
-        body: JSON.stringify({ from: FROM, to: [TO], subject, html })
+        body: JSON.stringify({ from: senderHeader(FROM, SENDER_NAME), to: [TO], subject, html, text })
       });
-      if (!r.ok) console.warn("[confirm] Resend failed:", await r.text());
-      return;
-    }catch(e){ console.warn("[confirm] Resend error:", e); }
+      const body = await safeText(r);
+      if (!r.ok) return { mail_ok:false, mail_provider:"resend", mail_response: body };
+      return { mail_ok:true, mail_provider:"resend", mail_response: body };
+    }catch(e){
+      // 落下去試 Brevo
+    }
   }
 
+  // 次選：Brevo
   if (process.env.BREVO_API_KEY) {
     try{
+      const sender = { email: FROM };
+      if (SENDER_NAME) sender.name = SENDER_NAME;
+      const to = [ parseAddr(TO) ];
       const r = await fetch("https://api.brevo.com/v3/smtp/email", {
         method:"POST",
         headers:{ "api-key": process.env.BREVO_API_KEY, "Content-Type":"application/json" },
         body: JSON.stringify({
-          sender: { email: FROM },
-          to: [{ email: TO }],
-          subject, htmlContent: html
+          sender,
+          to,
+          subject,
+          htmlContent: html,
+          textContent: text
         })
       });
-      if (!r.ok) console.warn("[confirm] Brevo failed:", await r.text());
-      return;
-    }catch(e){ console.warn("[confirm] Brevo error:", e); }
+      const body = await safeText(r);
+      if (!r.ok) return { mail_ok:false, mail_provider:"brevo", mail_response: body };
+      return { mail_ok:true, mail_provider:"brevo", mail_response: body };
+    }catch(e){
+      return { mail_ok:false, mail_provider:"brevo", mail_response: String(e?.message || e) };
+    }
   }
-  // 若都沒設，就不寄信
+
+  return { mail_ok:false, mail_provider:null, mail_response:"未設定 RESEND_API_KEY 或 BREVO_API_KEY" };
 }
 
+/* ---------- 工具 ---------- */
 function mdToHtml(md, issueUrl, siteBase){
   const esc = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br/>");
   const viewLink = siteBase ? `<p><a href="${siteBase}" target="_blank">開啟網站</a></p>` : "";
   const issueLink = issueUrl ? `<p>GitHub Issue：<a href="${issueUrl}">${issueUrl}</a></p>` : "";
   return `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap;">${esc(md)}</pre>${viewLink}${issueLink}`;
 }
+function stripHtml(h){ return (h||"").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, ""); }
+function senderHeader(email, name){ return name ? `${name} <${email}>` : email; }
+function parseAddr(str){
+  // 支援 "Name <email@x.com>" 或 "email@x.com"
+  const m = String(str).match(/^\s*(?:"?([^"]*)"?\s*)?<([^>]+)>\s*$/);
+  if (m) return { name: m[1] || undefined, email: m[2].trim() };
+  return { email: String(str).trim() };
+}
 
 function resp(status, text){ return { statusCode: status, body: text }; }
 function json(status, obj){ return { statusCode: status, headers:{ "Content-Type":"application/json" }, body: JSON.stringify(obj) }; }
+async function safeText(res){ try{ return await res.text(); }catch{ return "(no body)"; } }
