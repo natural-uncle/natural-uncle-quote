@@ -522,10 +522,10 @@ async function handleShareClick(){
     box.innerHTML = `
       <div class="mb-1 fw-bold">專屬報價單網址</div>
       <div class="input-group">
-        <input type="text" class="form-control" id="shareLinkInput" value="${href}" readonly>
+        <input type="text" class="form-control" id="shareLinkInput" value="自然大叔 團隊 說" readonly>
         <button class="btn btn-primary" id="copyLinkBtn" type="button">📋 一鍵複製</button>
       </div>
-      <div class="mt-2"><a href="${href}" target="_blank">${href}</a></div>`;
+      <div class="mt-2"><a href="${href}" target="_blank">自然大叔 團隊 說</a></div>`;
     document.getElementById('copyLinkBtn')?.addEventListener('click', async ()=>{
       const link = document.getElementById('shareLinkInput')?.value || href;
       try{
