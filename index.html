@@ -43,8 +43,6 @@
 
     /* 產生連結顯示區 */
     .link-box{ background:#eef6ff; border-radius:6px; padding:10px; margin-top:12px; word-wrap:break-word; }
-    .link-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
-    .link-url{flex:1 1 auto; min-width:260px;}
 
     .footer-bar{ background:#dbe9f6; padding:12px; text-align:center; margin-top:20px; border-top:2px solid #bbb; }
 
@@ -53,14 +51,44 @@
       table{ font-size:.9rem; }
     }
 
-    /* === 行動版固定工具列（手機顯示、桌機隱藏） === */
-    .mobile-bar{position:fixed;left:0;right:0;bottom:0;background:#0d6efd;color:#fff;z-index:1000;padding:10px;}
-    .mobile-bar .inner{display:flex;gap:10px;align-items:center;}
-    .mobile-bar .sum{font-weight:800;font-size:1.1rem;flex:1;line-height:1.2;}
-    .mobile-bar .btn{flex:0 0 auto}
-    @media (min-width:768px){ .mobile-bar{display:none;} }
-    /* 避免被固定列遮住底部內容（只在小螢幕時加一點底部間距） */
-    @media (max-width:767.98px){ .container-quote{ padding-bottom:80px; } }
+    /* ─────────────────────────────
+       A. 手機將表格改成「卡片堆疊」
+       ───────────────────────────── */
+    @media (max-width: 576px){
+      #quoteTable thead { display: none; }
+      #quoteTable, #quoteTable tbody, #quoteTable tr, #quoteTable td {
+        display: block; width: 100%;
+      }
+      #quoteTable tbody tr{
+        background:#fff; border:1px solid #ddd; border-radius:12px;
+        padding:10px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.05);
+      }
+      #quoteTable td{
+        border:0 !important; padding:6px 4px;
+      }
+      #quoteTable td::before{
+        content: attr(data-label);
+        display:block; font-weight:700; color:#555; margin-bottom:4px;
+      }
+      /* 操作按鈕在手機上滿版好點 */
+      #quoteTable td:last-child .btn{ width:100%; }
+      /* 避免固定底欄遮住內容 */
+      body{ padding-bottom: 70px; }
+    }
+
+    /* ─────────────────────────────
+       B. 手機底部固定工具列
+       ───────────────────────────── */
+    .mobile-bottom-bar{
+      position: fixed; left:0; right:0; bottom:0; z-index: 1030;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: saturate(180%) blur(8px);
+      border-top:1px solid #ddd; padding:10px 12px;
+      display:none; align-items:center; justify-content:space-between;
+    }
+    @media (max-width: 768px){
+      .mobile-bottom-bar{ display:flex; }
+    }
   </style>
 </head>
 <body>
@@ -185,7 +213,7 @@
   <!-- 🔹 合計 -->
   <h5 class="mt-3">合計：<span id="total">0</span> 元</h5>
 
-  <!-- 🔹 條款 -->
+  <!-- 🔹 備註與保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
   <ol>
     <li>請於確認本報價內容無誤後，以訊息方式回覆，以利後續安排作業。</li>
@@ -218,25 +246,17 @@
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
-  <!-- 🔹 產生連結顯示（含一鍵複製） -->
-  <div id="shareLinkBox" class="link-box d-none">
-    <div class="link-row">
-      <div class="link-url">
-        <b id="shareLinkLabel">專屬報價單網址：</b><br>
-        <a id="shareLinkA" href="#" target="_blank"></a>
-      </div>
-      <button id="copyLinkBtn" class="btn btn-outline-primary btn-sm">複製網址</button>
-    </div>
-    <div id="shareHint" class="small text-muted mt-1"></div>
-  </div>
+  <!-- 🔹 產生連結顯示 -->
+  <div id="shareLinkBox" class="link-box d-none text-center"></div>
 
 </div>
 
-<!-- 行動版固定工具列 -->
-<div id="mobileBar" class="mobile-bar d-md-none">
-  <div class="inner">
-    <div class="sum">合計：<b id="totalMobile">0</b> 元</div>
-    <button id="confirmBtnMobile" class="btn btn-success btn-lg">我同意此報價</button>
+<!-- B. 手機底部固定工具列（md 以下顯示） -->
+<div class="mobile-bottom-bar d-md-none">
+  <div class="fw-bold">合計：<span id="totalMobile">0</span> 元</div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary btn-sm" id="confirmBtnMobile">我同意此報價</button>
+    <button class="btn btn-outline-secondary btn-sm" id="shareLinkBtnMobile">產生連結</button>
   </div>
 </div>
 
@@ -244,7 +264,7 @@
 
 <script>
 /* ===============================
-   A. 頂部固定資訊
+   A. 頂部固定資訊：承辦項目＋報價日期
    =============================== */
 (function initHeader(){
   const project = "家電清洗服務";
@@ -254,7 +274,7 @@
 })();
 
 /* ===============================
-   B. 預約時間顯示
+   B. 預約時間：在藍色區塊即時合成可讀字串
    =============================== */
 function updateCleanFull(){
   const dv = document.getElementById("cleanDate").value;
@@ -271,10 +291,12 @@ document.getElementById("cleanDate").addEventListener("change", updateCleanFull)
 document.getElementById("cleanTime").addEventListener("change", updateCleanFull);
 
 /* ===============================
-   C. 計價規則
+   C. 自動帶價 + 優惠規則 + 手動覆寫
    =============================== */
 function updateTotals(){
   let total = 0;
+
+  // 先掃一輪
   let hasAC = false, hasPipe = false;
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const s = tr.querySelector(".service")?.value || "";
@@ -282,6 +304,7 @@ function updateTotals(){
     if(s === "自來水管清洗") hasPipe = true;
   });
 
+  // 逐列計算
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
     const service = tr.querySelector(".service")?.value || "";
     const option  = tr.querySelector(".option")?.value  || "";
@@ -330,11 +353,23 @@ function updateTotals(){
   });
 
   document.getElementById("total").textContent = String(total);
+  // 同步手機底欄合計
   const tm = document.getElementById("totalMobile");
   if (tm) tm.textContent = String(total);
 }
 
-// 事件綁定
+// 手機卡片化：將 thead 標題自動填入每個 td 的 data-label
+function applyMobileLabels(){
+  const labels = Array.from(document.querySelectorAll('#quoteTable thead th'))
+    .map(th => th.textContent.trim());
+  document.querySelectorAll('#quoteTable tbody tr').forEach(tr=>{
+    Array.from(tr.children).forEach((td, i)=>{
+      td.setAttribute('data-label', labels[i] || '');
+    });
+  });
+}
+
+// 事件委派：改服務/補充/數量 → 解除覆寫、重算
 document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
   if(e.target.classList.contains("service") || e.target.classList.contains("option") || e.target.classList.contains("qty")){
     const rowPrice = e.target.closest("tr").querySelector(".price");
@@ -342,6 +377,8 @@ document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
     updateTotals();
   }
 });
+
+// 手動輸入單價 → 設覆寫旗標，並重算
 document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
   if(e.target.classList.contains("price")){
     e.target.dataset.override = "true";
@@ -350,6 +387,8 @@ document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
     updateTotals();
   }
 });
+
+// 新增/刪除列
 document.getElementById("addRow").addEventListener("click", ()=>{
   const tbody = document.querySelector("#quoteTable tbody");
   const tr = document.createElement("tr");
@@ -393,22 +432,28 @@ document.getElementById("addRow").addEventListener("click", ()=>{
   `;
   tbody.appendChild(tr);
   updateTotals();
+  applyMobileLabels();
 });
 document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
   if(e.target.classList.contains("removeRow")){
     e.target.closest("tr").remove();
     updateTotals();
+    applyMobileLabels();
   }
 });
 
 /* ===============================
-   D. 確認按鈕（送到 Netlify Functions -> GitHub Issues/Email）
+   D. 確認按鈕（送出＋防連點＋成功後鎖住）
    =============================== */
-document.getElementById("confirmBtn").addEventListener("click", async ()=>{
+const confirmBtn = document.getElementById("confirmBtn");
+confirmBtn.addEventListener("click", async ()=>{
+  if (confirmBtn.disabled) return;
+  const oldText = confirmBtn.textContent;
   try{
-    const payload = collectShareData();
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "送出中…";
 
-    // 若此頁為 Cloudinary 短連結（#cid=...），帶上 ID 方便對帳
+    const payload = collectShareData();
     const hash = location.hash || "";
     if (hash.startsWith("#cid=")) {
       payload.cloudinaryId = decodeURIComponent(hash.replace("#cid=",""));
@@ -423,80 +468,66 @@ document.getElementById("confirmBtn").addEventListener("click", async ()=>{
     if(!res.ok){
       const t = await res.text();
       alert("送出失敗：" + t);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = oldText;
+      return;
+    }
+
+    await res.json();
+    alert("✅ 已送出同意！感謝您的察看，此將留存紀錄");
+    confirmBtn.textContent = "已送出同意";
+    // 保持 disabled=true 避免重複送出
+  }catch(err){
+    console.error(err);
+    alert("送出失敗，請稍後再試。");
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = oldText;
+  }
+});
+
+/* ===============================
+   E. 產生分享連結
+   - 若你的後端已接 Cloudinary /api/share，這段會呼叫它
+   - 若你仍用舊的 #data=...，把 fetch 換回舊邏輯即可
+   =============================== */
+document.getElementById("shareLinkBtn").addEventListener("click", async ()=>{
+  try{
+    const payload = collectShareData();
+    const res = await fetch("/api/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok){
+      const t = await res.text();
+      alert("產生連結失敗：" + t);
       return;
     }
 
     const data = await res.json();
-    alert("✅ 已送出同意！我們會盡快與您聯繫。\n紀錄連結：" + (data.issue_url || "（無）"));
+    const box = document.getElementById("shareLinkBox");
+    box.classList.remove("d-none");
+    // 兼容你可能使用的兩種回傳：JSON 連結或 PDF 連結
+    const href = data.share_url || data.pdf_url || "#";
+    box.innerHTML = `<b>專屬報價單網址：</b><br><a href="${href}" target="_blank">${href}</a>`;
+
+    // 手機快捷按鈕也顯示相同結果
+    window._lastShare = data;
   }catch(err){
     console.error(err);
-    alert("送出失敗，請稍後再試。");
+    alert("產生連結失敗，請稍後再試。");
   }
 });
-document.getElementById("confirmBtnMobile")?.addEventListener("click", ()=>{
-  document.getElementById("confirmBtn")?.click();
+
+// 手機底欄快捷鍵：轉呼叫原本按鈕
+document.getElementById('confirmBtnMobile')?.addEventListener('click', ()=>{
+  document.getElementById('confirmBtn')?.click();
+});
+document.getElementById('shareLinkBtnMobile')?.addEventListener('click', ()=>{
+  document.getElementById('shareLinkBtn')?.click();
 });
 
-/* ===============================
-   E. 產生分享連結（優先 Cloudinary 短連結；失敗退回 #data）
-   =============================== */
-document.getElementById("shareLinkBtn").addEventListener("click", createShareLink);
-
-async function createShareLink(){
-  const payload = collectShareData();
-
-  // 1) 試著請 Netlify Functions 上傳 Cloudinary（需要你有 /api/share）
-  try{
-    const r = await fetch("/api/share", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
-    });
-    if (r.ok) {
-      const j = await r.json();
-      const cid = j.cloudinaryId || j.public_id || j.cid;
-      if (cid) {
-        const url = `${location.origin}${location.pathname}#cid=${encodeURIComponent(cid)}`;
-        return showShareLink(url, false, j.expires_at);
-      }
-    }
-  }catch(e){
-    console.warn("share via cloudinary failed:", e);
-  }
-
-  // 2) 退回：把 JSON 塞在 #data（長連結）
-  const longUrl = `${location.origin}${location.pathname}#data=${encodeURIComponent(JSON.stringify(payload))}`;
-  return showShareLink(longUrl, true);
-}
-
-function showShareLink(url, isLong=false, expiresAt=null){
-  const box = document.getElementById("shareLinkBox");
-  const a = document.getElementById("shareLinkA");
-  const label = document.getElementById("shareLinkLabel");
-  const hint = document.getElementById("shareHint");
-  box.classList.remove("d-none");
-  a.href = url; a.textContent = url;
-  label.textContent = isLong ? "專屬報價單網址（長）：" : "專屬報價單網址：";
-  hint.textContent = isLong ? "（此為長連結，已含所有內容；建議之後改用 Cloudinary 以縮短網址）"
-                            : (expiresAt ? `（已建立短連結；若設定有效期限，將在 ${expiresAt} 後失效）` : "（已建立短連結）");
-
-  const copyBtn = document.getElementById("copyLinkBtn");
-  copyBtn.onclick = async ()=>{
-    try{
-      await navigator.clipboard.writeText(url);
-      const old = copyBtn.textContent;
-      copyBtn.textContent = "已複製！";
-      setTimeout(()=>copyBtn.textContent = old, 1500);
-    }catch(e){
-      // 若瀏覽器限制 Clipboard，就降級用 prompt
-      window.prompt("請複製此網址：", url);
-    }
-  };
-}
-
-/* ===============================
-   F. 序列化 / 唯讀載入（支援 #cid 與 #data）
-   =============================== */
 function collectShareData(){
   const items = [];
   document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
@@ -523,39 +554,54 @@ function collectShareData(){
   };
 }
 
-(function loadReadOnlyIfHash(){
-  const h = location.hash || "";
-  if (!h) { updateTotals(); return; }
+/* ===============================
+   F. 唯讀模式載入
+   - 支援 #cid=... （走 /api/view 讀 Cloudinary）
+   - 兼容舊的 #data=... 直接還原
+   =============================== */
+(async function loadReadOnlyIfHash(){
+  const hash = location.hash || "";
 
-  // 優先：#cid=（從 Cloudinary /api/share?cid=... 取回 JSON）
-  if (h.startsWith("#cid=")) {
-    const cid = decodeURIComponent(h.slice(5));
-    fetch(`/api/share?cid=${encodeURIComponent(cid)}`)
-      .then(r=>r.ok ? r.json() : Promise.reject())
-      .then(data=>{ if (data) renderReadOnly(data); else throw new Error("no data"); })
-      .catch(()=>{
-        alert("此連結已失效或資料讀取失敗。");
-        updateTotals();
-      });
-    return;
+  // A) 新方式：#cid=短代碼
+  if (hash.startsWith("#cid=")) {
+    try{
+      const cid = decodeURIComponent(hash.replace("#cid=",""));
+      const r = await fetch(`/api/view?id=${encodeURIComponent(cid)}`);
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      applyReadOnlyData(data);
+      applyMobileLabels();
+      return;
+    }catch(e){
+      console.error("讀取分享資料失敗：", e);
+      alert("讀取分享資料失敗，請確認連結是否正確。");
+      updateTotals();
+      applyMobileLabels();
+      return;
+    }
   }
 
-  // 備援：#data=
-  if (h.startsWith("#data=")) {
+  // B) 舊方式：#data=...
+  if (hash.startsWith("#data=")) {
     try{
-      const data = JSON.parse(decodeURIComponent(h.replace("#data=","")));
-      renderReadOnly(data);
+      const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
+      applyReadOnlyData(data);
+      applyMobileLabels();
+      return;
     }catch(err){
       console.error("讀取分享資料失敗：", err);
       updateTotals();
+      applyMobileLabels();
+      return;
     }
-    return;
   }
 
+  // C) 無 hash → 編輯模式
   updateTotals();
+  applyMobileLabels();
 })();
 
-function renderReadOnly(data){
+function applyReadOnlyData(data){
   // 頂部資訊
   if(data.quoteInfo) document.getElementById("quoteInfo").textContent = data.quoteInfo;
   // 基本欄位
@@ -583,16 +629,13 @@ function renderReadOnly(data){
     tbody.appendChild(tr);
   });
 
-  // 鎖定所有輸入（唯讀）
+  // 鎖定唯讀
   document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
   document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
 
   // 隱藏新增/分享按鈕（客戶只需查看與同意）
   document.getElementById("addRow").style.display = "none";
   document.getElementById("shareLinkBtn").style.display = "none";
-  // 唯讀檢視：隱藏行動版同意按鈕（避免再次送出）
-  const mBtn = document.getElementById("confirmBtnMobile");
-  if (mBtn) mBtn.style.display = "none";
 
   updateTotals();
 }
