@@ -1,6 +1,10 @@
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = []
+
 [[redirects]]
-  from = "/api/confirm"
-  to   = "/.netlify/functions/confirm"
+  from = "/api/view"
+  to   = "/.netlify/functions/view"
   status = 200
 
 [[redirects]]
@@ -9,11 +13,11 @@
   status = 200
 
 [[redirects]]
-  from = "/api/view"
-  to   = "/.netlify/functions/view"
+  from = "/api/lock"
+  to   = "/.netlify/functions/lock"
   status = 200
 
 [[redirects]]
-  from = "/api/lock"
-  to   = "/.netlify/functions/lock"
+  from = "/api/confirm"
+  to   = "/.netlify/functions/confirm"
   status = 200
