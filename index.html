@@ -376,14 +376,27 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
 /* ===============================
    D. 確認按鈕（正式：送到 Netlify Functions -> GitHub Issues）
    =============================== */
-document.getElementById("confirmBtn").addEventListener("click", async ()=>{
+const confirmBtn = document.getElementById("confirmBtn");
+
+confirmBtn.addEventListener("click", async ()=>{
+  // 已鎖住就不再送
+  if (confirmBtn.disabled) return;
+
+  const oldText = confirmBtn.textContent;
   try{
+    // 先鎖住，避免連按
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "送出中…";
+
+    // 蒐集資料
     const payload = collectShareData();
     const hash = location.hash || "";
     if (hash.startsWith("#cid=")) {
       payload.cloudinaryId = decodeURIComponent(hash.replace("#cid=",""));
     }
-    const res = await fetch("/api/confirm", {
+
+    // 送到 Netlify Function（用你現在的路徑）
+    const res = await fetch("/api/confirm", {   // 若未設 redirects，改成 '/.netlify/functions/confirm'
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -392,14 +405,25 @@ document.getElementById("confirmBtn").addEventListener("click", async ()=>{
     if(!res.ok){
       const t = await res.text();
       alert("送出失敗：" + t);
+      // 失敗 → 解鎖並復原文字
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = oldText;
       return;
     }
 
-    const data = await res.json();
+    // 不需要顯示 issue 連結，就不用用到回傳值
+    await res.json();
+
+    // 成功 → 顯示你要的訊息，並保持鎖住
     alert("✅ 已送出同意！感謝您的察看，此將留存紀錄");
+    confirmBtn.textContent = "已送出同意";
+    // confirmBtn.disabled = true;  // 已經是 true，不再解鎖
   }catch(err){
     console.error(err);
     alert("送出失敗，請稍後再試。");
+    // 例外 → 解鎖並復原文字
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = oldText;
   }
 });
 
