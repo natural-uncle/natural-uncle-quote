@@ -1,5 +1,5 @@
 // netlify/functions/view.js
-// 依短碼（cid）讀回 Cloudinary 上的 raw/json
+// 依短碼（cid）讀回 Cloudinary 上的 raw/json（含雙層 quotes 備援）
 
 export async function handler(event) {
   if (event.httpMethod !== "GET") {
@@ -11,15 +11,20 @@ export async function handler(event) {
     const id = (event.queryStringParameters?.id || "").trim();
     if (!id) return { statusCode: 400, body: "Missing parameters" };
 
-    const url = `https://res.cloudinary.com/dijzndzw2/raw/upload/${folder}/${encodeURIComponent(id)}.json`;
+    const base = "https://res.cloudinary.com/dijzndzw2/raw/upload";
+    const url1 = `${base}/${folder}/${encodeURIComponent(id)}.json`;            // 正確：quotes/q-xxx.json
+    const url2 = `${base}/${folder}/${folder}/${encodeURIComponent(id)}.json`;  // 備援：quotes/quotes/q-xxx.json
 
-    const r = await fetch(url);
+    // 先試正常路徑
+    let r = await fetch(url1);
     if (!r.ok) {
-      const t = await r.text();
-      return { statusCode: r.status, body: t };
+      // 若 404，再試舊的雙層路徑
+      const t1 = await r.text();
+      r = await fetch(url2);
+      if (!r.ok) return { statusCode: r.status, body: `${t1}\n${await r.text()}` };
     }
 
-    const text = await r.text(); // 原樣轉出
+    const text = await r.text();
     return {
       statusCode: 200,
       headers: {
