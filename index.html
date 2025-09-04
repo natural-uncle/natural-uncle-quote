@@ -215,6 +215,28 @@ html, body { overflow-x: hidden; }
 
   <!-- 合計 -->
   <h5 class="mt-3 total-banner">合計：<span id="total">0</span> 元</h5>
+  <!-- 付款方式 -->
+  <h5 class="section-title">付款方式</h5>
+  <div class="card p-3 mb-2">
+    <ul class="mb-2">
+      <li>付款條件：完工後現場付款或匯款</li>
+      <li>付款期限：當日付款完成</li>
+    </ul>
+    <div class="d-grid gap-2">
+      <button class="btn btn-outline-primary" id="toggleAccountBtn" type="button">💳 查看匯款資訊</button>
+    </div>
+    <div id="bankBox" class="link-box mt-2 d-none">
+      <div class="mb-1 fw-bold">匯款帳號（可複製）</div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="bankAccount" 
+               value="銀行：玉山銀行（808）南京東路分行　帳號：1234-567-890123　戶名：自然大叔"
+               readonly>
+        <button class="btn btn-primary" id="copyAccountBtn" type="button">📋 複製帳號</button>
+      </div>
+      <small class="text-muted d-block mt-1">若您需統編或三聯式發票，請於匯款備註填寫並另行告知。</small>
+    </div>
+  </div>
+
 
   <!-- 保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
@@ -437,6 +459,18 @@ async function handleConfirmSubmit(clickedBtn){
     await res.json();
 
     alert(`✅ 感謝您的確認，我們明日見囉！😊
+    
+    // 顯示匯款資訊區塊，方便客戶直接複製帳號
+    try{
+      const bankBox = document.getElementById('bankBox');
+      const toggleBtn = document.getElementById('toggleAccountBtn');
+      if (bankBox && bankBox.classList.contains('d-none')) {
+        bankBox.classList.remove('d-none');
+      }
+      if (toggleBtn){ toggleBtn.textContent = "🙈 隱藏匯款資訊"; }
+      bankBox?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }catch(_){}
+
 為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
 
 若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
@@ -637,6 +671,39 @@ function forceReadOnlyBlank(){
   });
   ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnDesktop","readonlyActions"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
+
+/* ========== 付款方式：顯示/隱藏 + 一鍵複製 ========== */
+(function setupPaymentBox(){
+  const toggleBtn = document.getElementById('toggleAccountBtn');
+  const bankBox = document.getElementById('bankBox');
+  const copyBtn = document.getElementById('copyAccountBtn');
+  toggleBtn?.addEventListener('click', ()=>{
+    bankBox?.classList.toggle('d-none');
+    if (!bankBox?.classList.contains('d-none')) {
+      toggleBtn.textContent = "🙈 隱藏匯款資訊";
+    } else {
+      toggleBtn.textContent = "💳 查看匯款資訊";
+    }
+  });
+  copyBtn?.addEventListener('click', async ()=>{
+    const account = document.getElementById('bankAccount')?.value || "";
+    try{
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(account);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = account; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = "✅ 已複製";
+      setTimeout(()=> copyBtn.textContent = orig, 1500);
+    }catch(_){
+      alert("複製失敗，請手動選取帳號");
+    }
+  });
+})();
+
 </script>
 </body>
 </html>
