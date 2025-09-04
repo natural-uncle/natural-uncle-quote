@@ -294,9 +294,14 @@
     </div>
   </div>
 
-  <!-- 🔹 功能按鈕（已移除桌機的「我同意此報價」，保留「產生連結」） -->
+  <!-- 🔹 功能按鈕（編輯模式保留「產生連結」；唯讀將隱藏） -->
   <div class="mt-3 text-center">
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
+  </div>
+
+  <!-- 🔹 唯讀（桌機）同意按鈕容器：唯讀且未封存時才顯示 -->
+  <div id="readonlyActions" class="text-center mt-3 d-none">
+    <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
   </div>
 
   <!-- 🔹 產生連結顯示（含一鍵複製） -->
@@ -304,7 +309,7 @@
 
 </div>
 
-<!-- B. 手機底部固定工具列（md 以下顯示；唯讀時自動隱藏「產生連結」） -->
+<!-- 手機底部固定工具列（md 以下顯示；唯讀未封存也可同意） -->
 <div class="mobile-bottom-bar d-md-none">
   <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
   <div class="d-flex gap-2 flex-grow-1">
@@ -568,6 +573,8 @@ async function handleConfirmSubmit(clickedBtn){
     // 前端立即把操作按鈕藏起來，避免重複送出
     const btnConfirmM = document.getElementById("confirmBtnMobile");
     if (btnConfirmM) { btnConfirmM.textContent = "已送出同意"; btnConfirmM.disabled = true; }
+    const btnConfirmD = document.getElementById("confirmBtnDesktop");
+    if (btnConfirmD) { btnConfirmD.textContent = "已送出同意"; btnConfirmD.disabled = true; }
     const btnShareDesk = document.getElementById("shareLinkBtn");
     if (btnShareDesk) btnShareDesk.style.display = "none";
     const btnShareM = document.getElementById("shareLinkBtnMobile");
@@ -583,8 +590,11 @@ async function handleConfirmSubmit(clickedBtn){
   }
 }
 
-// 綁定手機底欄「我同意此報價」
+// 綁定手機與桌機同意按鈕
 document.getElementById('confirmBtnMobile')?.addEventListener('click', function(){
+  handleConfirmSubmit(this);
+});
+document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){
   handleConfirmSubmit(this);
 });
 
@@ -684,7 +694,8 @@ function collectShareData(){
    F. 唯讀模式載入（支援封存狀態）
    - 支援 #cid=... （走 /api/view 讀 Cloudinary）
    - 兼容舊的 #data=... 直接還原
-   - 唯讀或封存時：隱藏「新增項目」「產生連結（桌機＋手機）」「行動版同意按鈕」
+   - 唯讀或封存時：隱藏「新增項目」「產生連結（桌機＋手機）」
+   - 唯讀未封存：**顯示**桌機與手機的「我同意此報價」
    =============================== */
 (async function loadReadOnlyIfHash(){
   const hash = location.hash || "";
@@ -699,8 +710,11 @@ function collectShareData(){
 
       applyReadOnlyData(data);      // 仍然把資料灌進去（唯讀）
       applyMobileLabels();
-      if (data.locked) showLockedNotice();  // ⛔️ 顯示封存提示並隱藏交互
 
+      // 唯讀：顯示桌機同意按鈕，隱藏產生連結
+      setReadonlyButtonsVisibility(!data.locked);
+
+      if (data.locked) showLockedNotice();  // ⛔️ 若已封存，提示並隱藏按鈕
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
@@ -718,6 +732,9 @@ function collectShareData(){
       const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
       applyReadOnlyData(data);
       applyMobileLabels();
+
+      // 舊連結不支援雲端鎖，但仍視為唯讀未封存：顯示桌機同意，隱藏產生連結
+      setReadonlyButtonsVisibility(true);
       return;
     }catch(err){
       console.error("讀取分享資料失敗：", err);
@@ -731,6 +748,22 @@ function collectShareData(){
   updateTotals();
   applyMobileLabels();
 })();
+
+function setReadonlyButtonsVisibility(canConfirm){
+  // 隱藏「產生連結」（桌機＋手機）
+  const shareDesk = document.getElementById("shareLinkBtn");
+  if (shareDesk) shareDesk.style.display = "none";
+  const shareM = document.getElementById("shareLinkBtnMobile");
+  if (shareM) shareM.style.display = "none";
+
+  // 桌機同意按鈕：唯讀且未封存才顯示
+  const ro = document.getElementById("readonlyActions");
+  if (ro) ro.classList.toggle("d-none", !canConfirm);
+
+  // 手機底欄的同意按鈕：唯讀未封存可見；封存或編輯時會另行處理
+  const confirmM = document.getElementById("confirmBtnMobile");
+  if (confirmM) confirmM.style.display = canConfirm ? "" : "none";
+}
 
 function applyReadOnlyData(data){
   // 頂部資訊（保持原字樣）
@@ -773,12 +806,12 @@ function applyReadOnlyData(data){
     tbody.appendChild(tr);
   });
 
-  // 鎖定唯讀
+  // 鎖定唯讀（但不隱藏同意按鈕，讓唯讀仍可同意）
   document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
   document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
 
-  // 唯讀：隱藏「新增項目」與「產生連結」（桌機＋手機）與「行動版同意」
-  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile"];
+  // 唯讀：隱藏「新增項目」與「產生連結」（桌機＋手機）
+  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile"];
   ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 
   updateTotals();
@@ -791,7 +824,7 @@ function showLockedNotice(){
   box.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
   document.querySelector('.container-quote').prepend(box);
 
-  const ids = ["shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile","addRow"];
+  const ids = ["shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile","confirmBtnDesktop","addRow","readonlyActions"];
   ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
 
@@ -801,7 +834,7 @@ function forceReadOnlyBlank(){
     if (el.tagName === "SELECT") el.setAttribute("disabled", true);
     else el.setAttribute("readonly", true);
   });
-  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile"];
+  const ids = ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnMobile","confirmBtnDesktop","readonlyActions"];
   ids.forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
 </script>
