@@ -460,17 +460,6 @@ async function handleConfirmSubmit(clickedBtn){
 
     alert(`✅ 感謝您的確認，我們明日見囉！😊
     
-    // 顯示匯款資訊區塊，方便客戶直接複製帳號
-    try{
-      const bankBox = document.getElementById('bankBox');
-      const toggleBtn = document.getElementById('toggleAccountBtn');
-      if (bankBox && bankBox.classList.contains('d-none')) {
-        bankBox.classList.remove('d-none');
-      }
-      if (toggleBtn){ toggleBtn.textContent = "🙈 隱藏匯款資訊"; }
-      bankBox?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }catch(_){}
-
 為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
 
 若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
