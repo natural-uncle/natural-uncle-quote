@@ -540,12 +540,13 @@ function collectShareData(){
       setReadonlyButtonsVisibility(!locked);
       if (locked){ showLockedNotice(); hideConfirmButtons(); }
       return;
-    }catch(e){
-      console.error("讀取分享資料失敗：", e);
-      alert("此連結已失效或資料讀取失敗。");
-      forceReadOnlyBlank(); showLockedNotice(); hideConfirmButtons();
-      return;
-    }
+    } catch(e){
+  console.error("讀取分享資料失敗：", e);
+  alert("此連結已失效或資料讀取失敗。");
+  forceReadOnlyBlank();   // 變成單純唯讀空白，不顯示已封存
+  hideConfirmButtons();
+  return;
+}
   }
 
   // 舊型連結：#data=...
