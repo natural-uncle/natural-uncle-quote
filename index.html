@@ -109,37 +109,6 @@ html, body { overflow-x: hidden; }
       100%{ box-shadow: 0 0 0 18px rgba(13,110,253,0); }
     }
     
-
-/* --- Payment highlight styles --- */
-.payment-highlight{
-  background: linear-gradient(135deg, rgba(13,110,253,.08), rgba(25,135,84,.08));
-  border: 1px dashed rgba(0,0,0,.12);
-}
-#bankBox.pulse{ animation: pulseBox 1.2s ease-out 1; }
-@keyframes pulseBox{
-  0%{ box-shadow: 0 0 0 0 rgba(13,110,253,.25); }
-  100%{ box-shadow: 0 0 0 18px rgba(13,110,253,0); }
-}
-
-/* --- Gradient CTA button --- */
-.btn-gradient{
-  background-image: linear-gradient(135deg, #0d6efd, #198754);
-  background-size: 200% 200%;
-  color: #fff;
-  border: none;
-  box-shadow: 0 6px 18px rgba(13,110,253,.25);
-  transition: transform .18s ease, box-shadow .18s ease, background-position .6s ease;
-}
-.btn-gradient:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(13,110,253,.35);
-  background-position: 100% 0;
-}
-.btn-gradient:active{
-  transform: translateY(0);
-  box-shadow: 0 6px 18px rgba(13,110,253,.25);
-}
-
 </style>
 </head>
 <body>
@@ -262,54 +231,57 @@ html, body { overflow-x: hidden; }
   <h5 class="mt-3 total-banner">合計：<span id="total">0</span> 元</h5>
   
     <!-- Payment Methods (Enhanced) -->
-    
-<!-- Payment Methods (Enhanced, Centered) -->
-<section id="payment" class="mt-3">
-  <div class="payment-highlight d-flex align-items-center gap-2 p-3 mb-2 rounded-3">
-    <div class="flex-shrink-0" style="font-size:2rem">💳</div>
-    <div>
-      <h2 class="m-0 fw-bold">付款方式</h2>
-      <p class="small text-muted mb-0">完工當日付款；欲匯款可點擊下方按鈕查看資訊並一鍵複製。</p>
-    </div>
-    <div class="ms-auto d-none d-md-block">
-      <span class="badge text-bg-success me-1">現場付款</span>
-      <span class="badge text-bg-primary">匯款 / 轉帳</span>
-    </div>
-  </div>
-
-  <div class="card shadow-sm border-0 overflow-hidden">
-    <div class="card-body">
-      <ul class="mb-3">
-        <li><strong>付款條件：</strong>完工後現場付款或匯款</li>
-        <li><strong>付款期限：</strong><span class="badge rounded-pill text-bg-warning align-middle">當日付款完成</span></li>
-      </ul>
-
-      <div class="d-flex justify-content-center my-2">
-        <button class="btn btn-gradient btn-lg px-4" id="toggleAccountBtn" type="button">
-          查看匯款資訊
-        </button>
+    <section id="payment" class="mt-3">
+      <div class="payment-highlight d-flex align-items-center gap-2 p-3 mb-2 rounded-3">
+        <div class="flex-shrink-0" style="font-size:2rem">💳</div>
+        <div>
+          <h2 class="m-0 fw-bold">付款方式</h2>
+          <p class="small text-muted mb-0">完工當日付款；欲匯款可點擊下方按鈕查看資訊並一鍵複製。</p>
+        </div>
+        <div class="ms-auto d-none d-md-block">
+          <span class="badge text-bg-success me-1">現場付款</span>
+          <span class="badge text-bg-primary">匯款 / 轉帳</span>
+        </div>
       </div>
 
-      <div id="bankBox" class="link-box mt-3 d-none">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="fw-bold">匯款帳號（可複製）</div>
-          <div class="d-none d-md-flex align-items-center gap-2 opacity-75 small">
-            <span>ATM</span> · <span>網銀</span> · <span>行動銀行</span>
+      <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="card-body">
+          <ul class="mb-3">
+            <li><strong>付款條件：</strong>完工後現場付款或匯款</li>
+            <li><strong>付款期限：</strong><span class="badge rounded-pill text-bg-warning align-middle">當日付款完成</span></li>
+          </ul>
+
+          <div class="row gy-2">
+            <div class="col-12 col-md-6 d-grid">
+              <button class="btn btn-primary btn-lg" id="toggleAccountBtn" type="button" onclick="(function(){var b=document.getElementById('bankBox'); if(!b)return; b.classList.toggle('d-none'); if(!b.classList.contains('d-none')){b.scrollIntoView({behavior:'smooth',block:'center'}); b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');}})();">
+                查看匯款資訊
+              </button>
+            </div>
+            <div class="col-12 col-md-6 d-grid">
+              <a class="btn btn-outline-success btn-lg" href="https://lin.ee/OHk6Rn7" target="_blank" rel="noopener">透過 LINE 洽詢付款
+              </a>
+            </div>
+          </div>
+
+          <div id="bankBox" class="link-box mt-3 d-none">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-bold">匯款帳號（可複製）</div>
+              <div class="d-none d-md-flex align-items-center gap-2 opacity-75 small">
+                <span>ATM</span> · <span>網銀</span> · <span>行動銀行</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <input type="text" class="form-control form-control-lg" id="bankAccount"
+                     value="銀行：台新銀行（812）　帳號：28881000063784　戶名：林宥騰"
+                     readonly>
+              <button class="btn btn-primary" id="copyAccountBtn" type="button">📋 複製帳號</button>
+            </div>
+            <small class="text-muted d-block mt-2">如需統編或三聯式發票，請於匯款備註填寫並另行告知。</small>
           </div>
         </div>
-
-        <div class="input-group">
-          <input type="text" class="form-control form-control-lg" id="bankAccount"
-                 value="銀行：台新銀行（812）　帳號：28881000063784　戶名：林宥騰"
-                 readonly>
-          <button class="btn btn-primary" id="copyAccountBtn" type="button">📋 複製帳號</button>
-        </div>
-        <small class="text-muted d-block mt-2">如需統編或三聯式發票，請於匯款備註填寫並另行告知。</small>
       </div>
-    </div>
-  </div>
-</section>
-
+    </section>
     <!-- 保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
   <ol>
@@ -362,10 +334,420 @@ html, body { overflow-x: hidden; }
 
 <div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
 
+<script>
+/* ========== 頂部資訊 ========== */
+(function initHeader(){
+  const project = "家電清洗服務";
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById("quoteInfo").innerHTML =
+    `<span class="qi-proj">承辦項目：${project}</span><span class="qi-sep"> ｜ </span><span class="qi-date">報價日期：${dateStr}</span>`;
+})();
+
+/* ========== 預約時間合成 ========== */
+function updateCleanFull(){
+  const dv = document.getElementById("cleanDate").value;
+  const tv = document.getElementById("cleanTime").value;
+  if(!dv || !tv) return;
+  const dt = new Date(`${dv}T${tv}`);
+  const wd = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"][dt.getDay()];
+  const yyyy = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
+  const hh = String(dt.getHours()).padStart(2,'0'), mi = String(dt.getMinutes()).padStart(2,'0');
+  const ampm = dt.getHours() < 12 ? "上午" : "下午";
+  document.getElementById("cleanFull").textContent = `${yyyy}/${mm}/${dd}（${wd}）${ampm} ${hh}:${mi} 開始`;
+}
+document.getElementById("cleanDate").addEventListener("change", updateCleanFull);
+document.getElementById("cleanTime").addEventListener("change", updateCleanFull);
+
+/* ========== 自動帶價 + 合計 ========== */
+function updateTotals(){
+  let total = 0, hasAC=false, hasPipe=false;
+  document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
+    const s = tr.querySelector(".service")?.value || "";
+    if(s === "冷氣清洗") hasAC = true;
+    if(s === "自來水管清洗") hasPipe = true;
+  });
+  document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
+    const service = tr.querySelector(".service")?.value || "";
+    const option  = tr.querySelector(".option")?.value  || "";
+    const qtyEl   = tr.querySelector(".qty");
+    const priceEl = tr.querySelector(".price");
+    const noteEl  = tr.querySelector(".discount-note");
+    const subEl   = tr.querySelector(".subtotal");
+    const qty = Math.max(1, Number(qtyEl?.value || 1));
+    let price = Number(priceEl?.value || 0);
+    if(noteEl) noteEl.textContent = "";
+    const overridden = priceEl?.dataset.override === "true";
+    if(!overridden){
+      if(service === "冷氣清洗" && option.includes("分離式")){
+        price = (qty >= 3) ? 1500 : 1800;
+        if(qty >= 3 && noteEl) noteEl.textContent = "已套用三台以上優惠價";
+      } else if(service === "冷氣清洗" && option.includes("吊隱式")){
+        price = 2800;
+      } else if(service === "洗衣機清洗" && option.includes("直立式")){
+        price = hasAC ? 1800 : 2000;
+        if(hasAC && noteEl) noteEl.textContent = "已套用冷氣清洗優惠價";
+      } else if(service === "防霉處理"){
+        price = (qty >= 5) ? 250 : 300;
+        if(qty >= 5 && noteEl) noteEl.textContent = "已套用五台以上優惠價";
+      } else if(service === "臭氧殺菌"){
+        price = (qty >= 5) ? 150 : 200;
+        if(qty >= 5 && noteEl) noteEl.textContent = "已套用五台以上優惠價";
+      } else if(service === "變形金剛機型"){ price = 500; }
+      else if(service === "一體式水盤機型"){ price = 500; }
+      else if(service === "超長費用"){ price = 300; }
+      else if(service === "水塔清洗"){
+        price = hasPipe ? 800 : 1000;
+        if(hasPipe && noteEl) noteEl.textContent = "已套用自來水管清洗優惠價";
+      }
+      priceEl.value = price;
+    }
+    const subtotal = qty * (Number(priceEl?.value || price) || 0);
+    subEl.textContent = String(subtotal);
+    total += subtotal;
+  });
+  document.getElementById("total").textContent = String(total);
+  const tm = document.getElementById("totalMobile"); if (tm) tm.textContent = String(total);
+}
+function applyMobileLabels(){
+  const labels = Array.from(document.querySelectorAll('#quoteTable thead th')).map(th => th.textContent.trim());
+  document.querySelectorAll('#quoteTable tbody tr').forEach(tr=>{
+    Array.from(tr.children).forEach((td, i)=> td.setAttribute('data-label', labels[i] || '') );
+  });
+}
+document.querySelector("#quoteTable tbody").addEventListener("change", (e)=>{
+  if(e.target.classList.contains("service") || e.target.classList.contains("option") || e.target.classList.contains("qty")){
+    const rowPrice = e.target.closest("tr").querySelector(".price");
+    if(rowPrice && rowPrice.dataset.override) delete rowPrice.dataset.override;
+    updateTotals();
+  }
+});
+document.querySelector("#quoteTable tbody").addEventListener("input", (e)=>{
+  if(e.target.classList.contains("price")){ e.target.dataset.override = "true"; updateTotals(); }
+  else if(e.target.classList.contains("qty")){ updateTotals(); }
+});
+document.getElementById("addRow").addEventListener("click", ()=>{
+  const tbody = document.querySelector("#quoteTable tbody");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>
+      <select class="form-select service">
+        <option value="">請選擇</option>
+        <option value="冷氣清洗">冷氣清洗</option>
+        <option value="洗衣機清洗">洗衣機清洗</option>
+        <option value="防霉處理">防霉處理</option>
+        <option value="臭氧殺菌">臭氧殺菌</option>
+        <option value="變形金剛機型">變形金剛機型</option>
+        <option value="一體式水盤機型">一體式水盤機型</option>
+        <option value="超長費用">超長費用</option>
+        <option value="自來水管清洗">自來水管清洗</option>
+        <option value="水塔清洗">水塔清洗</option>
+      </select>
+    </td>
+    <td>
+      <select class="form-select option">
+        <option value="">請選擇</option>
+        <option>分離式（壁掛式）</option>
+        <option>吊隱式（隱藏式）</option>
+        <option>直立式</option>
+        <option>家用</option>
+        <option>特殊機型額外加收費</option>
+        <option>冷氣防霉處理（抑菌噴劑）</option>
+        <option>高臭氧殺菌30分鐘</option>
+        <option>加購價</option>
+        <option>無廚一衛</option>
+        <option>一廚一衛</option>
+        <option>一廚兩衛</option>
+        <option>一廚三衛</option>
+        <option>一廚四衛</option>
+      </select>
+    </td>
+    <td><input type="number" class="form-control qty" value="1" min="1" /></td>
+    <td><input type="number" class="form-control price" value="0" /><small class="discount-note"></small></td>
+    <td class="subtotal">0</td>
+    <td><button class="btn btn-danger btn-sm removeRow">刪除</button></td>`;
+  tbody.appendChild(tr);
+  updateTotals(); applyMobileLabels();
+});
+document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
+  if(e.target.classList.contains("removeRow")){
+    e.target.closest("tr").remove();
+    updateTotals(); applyMobileLabels();
+  }
+});
+
+/* ========== 本機保險（舊 #data 連結） ========== */
+function markLocallyLocked(key){ try{ localStorage.setItem(key, "1"); }catch(_){} }
+function isLocallyLocked(key){ try{ return localStorage.getItem(key)==="1"; }catch(_){ return false; } }
+
+/* ========== 送出「我同意此報價」（桌機） ========== */
+async function handleConfirmSubmit(clickedBtn){
+  if (clickedBtn && clickedBtn.disabled) return;
+  const originalText = clickedBtn ? clickedBtn.textContent : "";
+  try{
+    if (clickedBtn){ clickedBtn.disabled = true; clickedBtn.textContent = "送出中…"; }
+
+    const payload = collectShareData();
+    const hash = location.hash || "";
+    let cid = null;
+    if (hash.startsWith("#cid=")) { cid = decodeURIComponent(hash.replace("#cid=","")); payload.cloudinaryId = cid; }
+
+    const res = await fetch("/.netlify/functions/confirm", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const t = await res.text(); alert("送出失敗：" + t);
+      if (clickedBtn){ clickedBtn.disabled = false; clickedBtn.textContent = originalText; }
+      return;
+    }
+    await res.json();
+
+    alert(`✅ 感謝您的確認，我們明日見囉！😊
+    
+為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
+
+若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
+・大型衣櫃、書櫃等重物
+・無法移動之床或沙發
+・其他無法暫移之家具
+
+如有異動也歡迎提前與我們聯繫，謝謝您配合！
+
+— 自然大叔 敬上`);
+
+    if (cid) {
+      try{
+        await fetch("/.netlify/functions/lock", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ id: cid })
+        });
+      }catch(_){}
+      setTimeout(()=>{ location.href = location.pathname + "#cid=" + encodeURIComponent(cid); location.reload(); }, 300);
+      markLocallyLocked("locked:cid:"+cid);
+    } else if (hash.startsWith("#data=")) {
+      markLocallyLocked("locked:data:"+hash);
+      const btn = document.getElementById("confirmBtnDesktop");
+      if (btn){ btn.textContent = "已送出同意"; btn.disabled = true; }
+    }
+
+  }catch(err){
+    console.error(err);
+    alert("送出失敗，請稍後再試。");
+    if (clickedBtn){ clickedBtn.disabled = false; clickedBtn.textContent = originalText; }
+  }
+}
+document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
 
 
+document.getElementById('confirmBtnMobile')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
+/* ========== 產生分享連結（含一鍵複製） ========== */
+async function handleShareClick(){
+  try{
+    const payload = collectShareData();
+    const res = await fetch("/.netlify/functions/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const t = await res.text(); alert("產生連結失敗：" + t); return; }
+    const data = await res.json();
+    const href = data.share_url || data.pdf_url || "#";
+    const box = document.getElementById("shareLinkBox");
+    box.classList.remove("d-none");
+    box.innerHTML = `
+      <div class="mb-1 fw-bold">專屬報價單網址</div>
+      <div class="input-group">
+        <input type="text" class="form-control" id="shareLinkInput" value="${href}" readonly>
+        <button class="btn btn-primary" id="copyLinkBtn" type="button">📋 一鍵複製</button>
+      </div>
+      <div class="mt-2"><a href="${href}" target="_blank">${href}</a></div>`;
+    document.getElementById('copyLinkBtn')?.addEventListener('click', async ()=>{
+      const link = document.getElementById('shareLinkInput')?.value || href;
+      try{
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(link);
+        else { const ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+        const el=document.getElementById('copyLinkBtn'); const orig=el.textContent; el.textContent="✅ 已複製"; setTimeout(()=> el.textContent=orig,1500);
+      }catch(_){ alert("複製失敗，請手動選取複製"); }
+    });
+  }catch(err){ console.error(err); alert("產生連結失敗，請稍後再試。"); }
+}
+document.getElementById("shareLinkBtn")?.addEventListener("click", handleShareClick);
+document.getElementById('shareLinkBtnMobile')?.addEventListener('click', handleShareClick);
 
-        
+/* ========== 序列化 ========== */
+function collectShareData(){
+  const items = [];
+  document.querySelectorAll("#quoteTable tbody tr").forEach(tr=>{
+    items.push({
+      service: tr.querySelector(".service")?.value || "",
+      option:  tr.querySelector(".option")?.value  || "",
+      qty:     tr.querySelector(".qty")?.value     || "1",
+      price:   tr.querySelector(".price")?.value   || "0",
+      subtotal:tr.querySelector(".subtotal")?.textContent || "0",
+      overridden: tr.querySelector(".price")?.dataset.override === "true"
+    });
+  });
+  return {
+    quoteInfo: document.getElementById("quoteInfo").textContent.replace(/\s+/g,' ').trim(),
+    customer:  document.getElementById("customerName").value,
+    phone:     document.getElementById("customerPhone").value,
+    address:   document.getElementById("customerAddress").value,
+    technician:document.getElementById("technicianName").value,
+    techPhone: document.getElementById("technicianPhone").value,
+    cleanTime: document.getElementById("cleanFull").textContent,
+    otherNotes:document.getElementById("otherNotes").value,
+    items, total: document.getElementById("total").textContent
+  };
+}
+
+/* ========== 唯讀載入（#cid / #data） ========== */
+(async function loadReadOnlyIfHash(){
+  const hash = location.hash || "";
+
+  // 新型連結：#cid=完整 public_id（可能含資料夾）
+  if (hash.startsWith("#cid=")) {
+    const cid = decodeURIComponent(hash.replace("#cid=",""));
+    if (isLocallyLocked("locked:cid:"+cid)) { hideConfirmButtons(); }
+
+    try{
+      const r = await fetch(`/.netlify/functions/view?id=${encodeURIComponent(cid)}&ts=${Date.now()}`, { cache:"no-store" });
+      if(!r.ok) throw new Error(await r.text());
+      const payload = await r.json();
+
+      const data = payload?.data || {};
+      const locked = !!payload?.locked;
+
+      applyReadOnlyData(data); applyMobileLabels();
+      setReadonlyButtonsVisibility(!locked);
+      if (locked){ showLockedNotice(); hideConfirmButtons(); }
+      return;
+    }catch(e){
+      console.error("讀取分享資料失敗：", e);
+      alert("此連結已失效或資料讀取失敗。");
+      forceReadOnlyBlank(); // ⬅️ 不再顯示已封存
+      hideConfirmButtons();
+      return;
+    }
+  }
+
+  // 舊型連結：#data=...
+  if (hash.startsWith("#data=")) {
+    try{
+      const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
+      applyReadOnlyData(data); applyMobileLabels();
+      if (isLocallyLocked("locked:data:"+hash)) { hideConfirmButtons(); showLockedNotice(); }
+      else { setReadonlyButtonsVisibility(true); }
+      return;
+    }catch(err){ console.error("讀取分享資料失敗：", err); updateTotals(); applyMobileLabels(); return; }
+  }
+
+  // 無 hash：編輯模式
+  updateTotals(); applyMobileLabels();
+})();
+
+function setReadonlyButtonsVisibility(canConfirm){
+  const shareDesk = document.getElementById("shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
+  const shareM   = document.getElementById("shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
+  const ro       = document.getElementById("readonlyActions"); if (ro) ro.classList.toggle("d-none", !canConfirm);
+  const mConfirm = document.getElementById("confirmBtnMobile");   if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm);
+  const dConfirm = document.getElementById("confirmBtnDesktop");  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
+}
+function hideConfirmButtons(){
+  const d = document.getElementById("confirmBtnDesktop");
+  const ro = document.getElementById("readonlyActions");
+  const m = document.getElementById("confirmBtnMobile");
+  if (d){ d.style.display = "none"; }
+  if (ro){ ro.classList.add("d-none"); }
+  if (m){ m.classList.add("d-none"); }
+
+}
+function applyReadOnlyData(data){
+  if(data.quoteInfo){
+    const qi = document.getElementById("quoteInfo");
+    const m = data.quoteInfo.match(/承辦項目：([^｜\s]+).*?報價日期：(\d{4}\/\d{2}\/\d{2})/);
+    qi.innerHTML = m ? `<span class="qi-proj">承辦項目：${m[1]}</span><span class="qi-sep"> ｜ </span><span class="qi-date">報價日期：${m[2]}</span>` : data.quoteInfo;
+  }
+  document.getElementById("customerName").value   = data.customer  || "";
+  document.getElementById("customerPhone").value  = data.phone     || "";
+  document.getElementById("customerAddress").value= data.address   || "";
+  document.getElementById("technicianName").value = data.technician|| "";
+  document.getElementById("technicianPhone").value= data.techPhone || "";
+  document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
+  // 在唯讀檢視中隱藏預約時間的輸入欄（只保留完整預約時間）
+  (function(){
+    const row = document.querySelector('#cleanFullBox .row');
+    if (row) row.style.display = 'none';
+    const cd = document.getElementById('cleanDate');
+    const ct = document.getElementById('cleanTime');
+    if (cd) cd.style.display = 'none';
+    if (ct) ct.style.display = 'none';
+  })();
+
+  document.getElementById("otherNotes").value     = data.otherNotes|| "";
+
+  const tbody = document.querySelector("#quoteTable tbody"); tbody.innerHTML = "";
+  (data.items || []).forEach(it=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><select class="form-select service" disabled><option>${it.service||""}</option></select></td>
+      <td><select class="form-select option" disabled><option>${it.option||""}</option></select></td>
+      <td><input type="number" class="form-control qty" value="${it.qty||1}" readonly /></td>
+      <td><input type="number" class="form-control price" value="${it.price||0}" readonly /><small class="discount-note"></small></td>
+      <td class="subtotal">${it.subtotal||0}</td>
+      <td></td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll("input, textarea").forEach(el=>el.setAttribute("readonly", true));
+  document.querySelectorAll("select").forEach(el=>el.setAttribute("disabled", true));
+  ["addRow","shareLinkBtn","shareLinkBtnMobile"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
+  updateTotals();
+}
+function showLockedNotice(){
+  const box = document.createElement('div');
+  box.className = 'alert alert-success mt-2';
+  box.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
+  document.querySelector('.container-quote').prepend(box);
+}
+function forceReadOnlyBlank(){
+  document.querySelectorAll("input, textarea, select").forEach(el=>{
+    if (el.tagName === "SELECT") el.setAttribute("disabled", true);
+    else el.setAttribute("readonly", true);
+  });
+  ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnDesktop","readonlyActions"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
+}
+
+/* ========== 付款方式：顯示/隱藏 + 一鍵複製 ========== */
+(function setupPaymentBox(){
+  const toggleBtn = document.getElementById('toggleAccountBtn');
+  const bankBox = document.getElementById('bankBox');
+  const copyBtn = document.getElementById('copyAccountBtn');
+  toggleBtn?.addEventListener('click', ()=>{
+    bankBox?.classList.toggle('d-none');
+    if (!bankBox?.classList.contains('d-none')) {
+      toggleBtn.textContent = "🙈 隱藏匯款資訊";
+    } else {
+      toggleBtn.textContent = "💳 查看匯款資訊";
+    }
+  });
+  copyBtn?.addEventListener('click', async ()=>{
+    const account = document.getElementById('bankAccount')?.value || "";
+    try{
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(account);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = account; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = "✅ 已複製";
+      setTimeout(()=> copyBtn.textContent = orig, 1500);
+    }catch(_){
+      alert("複製失敗，請手動選取帳號");
+    }
+  });
+})();
+
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -391,9 +773,9 @@ document.addEventListener('DOMContentLoaded', function(){
         }catch(e){}
       });
     }
-  }catch(e){}
+  }catch(e){ /* swallow */ }
 });
 </script>
-
+        
 </body>
 </html>
