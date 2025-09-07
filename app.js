@@ -676,46 +676,91 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 
-// === Cancellation Warning Modal (strict) ===
+
+// === Cancellation Warning Modal (localized & balanced) ===
 (function(){
-  function normalize(v){ return (v||'').toString().trim().toLowerCase(); }
+  function normalize(v){ return (v==null?'':String(v)).trim().toLowerCase(); }
+
+  // Map various language/status terms to a canonical cancelled boolean
+  function isCancelledWord(s){
+    s = normalize(s);
+    // accept exact matches only (avoid false positives)
+    const CANCEL_WORDS = new Set([
+      'cancelled','canceled','void','voided',
+      '作廢','已作廢','取消','已取消','作廢單','作廢中'
+    ]);
+    return CANCEL_WORDS.has(s);
+  }
+
   function getQuoteId(){
     try { if (window.quote && (window.quote.id || window.quote.qid || window.quote.uuid)) return String(window.quote.id || window.quote.qid || window.quote.uuid); } catch(e){}
-    var metaId = document.querySelector('meta[name="quote:id"]');
+    const metaId = document.querySelector('meta[name="quote:id"]');
     if (metaId && metaId.content) return metaId.content;
-    try { var u = new URL(window.location.href); return u.searchParams.get('qid') || u.searchParams.get('quote_id') || u.searchParams.get('id') || null; } catch(e){}
+    try { const u = new URL(window.location.href); return u.searchParams.get('qid') || u.searchParams.get('quote_id') || u.searchParams.get('id') || null; } catch(e){}
     return null;
   }
-  function getExplicitStatus(){
-    try { if (window.quote && (window.quote.status || window.quote.state)) return normalize(window.quote.status || window.quote.state); } catch(e){}
-    if (typeof window.QUOTE_STATUS !== 'undefined') return normalize(window.QUOTE_STATUS);
-    var bodyStatus = (document.body && (document.body.dataset.quoteStatus || document.body.dataset.status));
-    if (bodyStatus) return normalize(bodyStatus);
-    var meta = document.querySelector('meta[name="quote:status"]');
-    if (meta && meta.content) return normalize(meta.content);
-    try { var u = new URL(window.location.href); var qs = u.searchParams.get('status'); if (qs) return normalize(qs); } catch(e){}
-    return '';
-  }
-  function detectCancelled(){
-    var s = getExplicitStatus();
-    if (s === 'cancelled' || s === 'canceled') return true;
-    if (!s || s === 'confirmed' || s === 'pending' || s === 'open' || s === 'active') return false;
-    return false;
-  }
+
   function getCancelReason(){
     try { if (window.quote && (window.quote.cancel_reason || window.quote.reason)) return String(window.quote.cancel_reason || window.quote.reason); } catch(e){}
     if (typeof window.QUOTE_REASON !== 'undefined') return String(window.QUOTE_REASON);
-    var meta = document.querySelector('meta[name="quote:reason"]');
+    const meta = document.querySelector('meta[name="quote:reason"]');
     if (meta && meta.content) return meta.content;
     return null;
   }
+
+  function getExplicitStatus(){
+    // status string from multiple sources
+    try { if (window.quote && (window.quote.status || window.quote.state)) return normalize(window.quote.status || window.quote.state); } catch(e){}
+    if (typeof window.QUOTE_STATUS !== 'undefined') return normalize(window.QUOTE_STATUS);
+    const bodyStatus = (document.body && (document.body.dataset.quoteStatus || document.body.dataset.status));
+    if (bodyStatus) return normalize(bodyStatus);
+    const meta = document.querySelector('meta[name="quote:status"]');
+    if (meta && meta.content) return normalize(meta.content);
+    try { const u = new URL(window.location.href); const qs = u.searchParams.get('status'); if (qs) return normalize(qs); } catch(e){}
+    return '';
+  }
+
+  function getBooleanFlags(){
+    // true/false flags from multiple sources
+    try {
+      if (window.quote && (typeof window.quote.cancelled !== 'undefined' || typeof window.quote.canceled !== 'undefined' || typeof window.quote.is_cancelled !== 'undefined')){
+        return Boolean(window.quote.cancelled || window.quote.canceled || window.quote.is_cancelled);
+      }
+    } catch(e){}
+    if (typeof window.QUOTE_CANCELLED !== 'undefined') return Boolean(window.QUOTE_CANCELLED);
+    const b = document.body;
+    if (b){
+      if (b.dataset.cancelled === 'true' || b.dataset.canceled === 'true') return true;
+      if (b.classList && (b.classList.contains('is-cancelled') || b.classList.contains('cancelled'))) return true;
+    }
+    const meta = document.querySelector('meta[name="quote:cancelled"]');
+    if (meta && normalize(meta.content) === 'true') return true;
+    try {
+      const u = new URL(window.location.href);
+      const qp = (u.searchParams.get('cancelled') || u.searchParams.get('canceled') || u.searchParams.get('void') || '').toLowerCase();
+      if (qp === '1' || qp === 'true' || qp === 'yes') return true;
+    } catch(e){}
+    return false;
+  }
+
+  function detectCancelled(){
+    // Priority 1: explicit boolean flags
+    if (getBooleanFlags()) return true;
+    // Priority 2: explicit status text (localized)
+    const s = getExplicitStatus();
+    if (isCancelledWord(s)) return true;
+    // Unknown or non-cancelled -> do not show
+    return false;
+  }
+
   function alreadyShownForThisQuote(){
-    var id = getQuoteId() || 'default';
-    var key = 'cancelModalShown:' + id;
+    const id = getQuoteId() || 'default';
+    const key = 'cancelModalShown:' + id;
     if (sessionStorage.getItem(key)) return true;
     sessionStorage.setItem(key, '1');
     return false;
   }
+
   function showCancellationModal(){
     const backdrop = document.createElement('div');
     backdrop.className = 'cancel-modal-backdrop';
@@ -731,12 +776,14 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('cancel-modal-ok').addEventListener('click', close);
     backdrop.addEventListener('click', function(e){ if (e.target === backdrop) close(); });
   }
+
   function maybeShow(){
     if (!detectCancelled()) return;
     if (alreadyShownForThisQuote()) return;
     showCancellationModal();
   }
+
   if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', maybeShow); } else { setTimeout(maybeShow, 0); }
 })();
-// === End Cancellation Warning Modal (strict) ===
+// === End Cancellation Warning Modal (localized & balanced) ===
 
