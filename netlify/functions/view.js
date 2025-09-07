@@ -1,9 +1,5 @@
 // netlify/functions/view.js
-// 找出 Cloudinary 檔案（raw/image/video × upload/authenticated/private），回傳 data + locked
-// - 自動去掉副檔名(.json/.txt...)
-// - id 無資料夾時可補 CLOUDINARY_FOLDER (預設 quotes)
-// - 若 Admin API 全部找不到，再用 Search API 以 public_id / FOLDER/public_id / filename 搜尋
-// - 一律 no-store，避免快取
+// 找出 Cloudinary 檔案（raw/image/video × upload/authenticated/private），回傳 data + locked + tags/context
 
 const RTYPES = ["raw", "image", "video"];
 const DTYPES = ["upload", "authenticated", "private"];
@@ -58,8 +54,15 @@ export async function handler(event) {
     const raw = await r2.text();
     let data; try { data = JSON.parse(raw); } catch { data = raw; }
 
-    const status = (meta?.context?.custom?.status || "");
-  return resp(200, { status,  locked, data, public_id: publicId, resource_type: rtype, type: dtype }, true);
+    return resp(200, { 
+      locked, 
+      data, 
+      public_id: publicId, 
+      resource_type: rtype, 
+      type: dtype,
+      tags: meta.tags || [],
+      context: meta.context || {}
+    }, true);
 
   } catch (e) {
     console.error("[view.js] error:", e);
