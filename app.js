@@ -427,14 +427,18 @@ function setupCancelButtonsVisibility(payload){
   if (show){
     if (!qs('#cancelBtnDesktop')?.dataset.bound){
       qs('#cancelBtnDesktop')?.addEventListener('click', ()=>{
-        const reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+        const _input = prompt('請輸入取消/作廢原因（可留空）：');
+        if (_input === null) { return; }
+        const reason = _input || '';
         callCancel(reason);
       });
       if (qs('#cancelBtnDesktop')) qs('#cancelBtnDesktop').dataset.bound = '1';
     }
     if (!qs('#cancelBtnMobile')?.dataset.bound){
       qs('#cancelBtnMobile')?.addEventListener('click', ()=>{
-        const reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+        const _input = prompt('請輸入取消/作廢原因（可留空）：');
+        if (_input === null) { return; }
+        const reason = _input || '';
         callCancel(reason);
       });
       if (qs('#cancelBtnMobile')) qs('#cancelBtnMobile').dataset.bound = '1';
