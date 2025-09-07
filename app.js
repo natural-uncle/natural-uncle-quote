@@ -15,15 +15,7 @@ function addClass(el, c){ if (el) el.classList.add(c); }
 function removeClass(el, c){ if (el) el.classList.remove(c); }
 function toggle(el, show){ if (el) el.classList.toggle('d-none', !show); }
 
-function wantShowCancel(){ 
-  try{
-    if (isAdmin()) return true;
-    const q = getParam('showCancel');
-    if (q === '1') return true;
-    if (/[?&]showCancel=1/.test(location.hash||"")) return true;
-  }catch(_){}
-  return false;
-}
+function wantShowCancel(){ return true; }
 
 
 /* 取消狀態全域旗標 */
@@ -426,7 +418,7 @@ function setupCancelButtonsVisibility(payload){
   const isCancelled =
     (resource?.resource_type === 'raw' && Array.isArray(resource?.tags) && resource.tags.includes('cancelled')) ||
     (resource?.context?.custom?.status === 'cancelled');
-  const show = wantShowCancel() && !isCancelled;
+  const show = !isCancelled; // always show unless already cancelled
 
   console.debug('[quote] cancel visibility', {admin:isAdmin(), want: wantShowCancel(), isCancelled});
   toggle(qs('#cancelBtnDesktop'), show);
@@ -482,11 +474,9 @@ document.addEventListener('click', function(e){
    初始：若 admin，預先顯示取消鈕與唯讀動作區（避免晚一步載入）
 ===================== */
 document.addEventListener('DOMContentLoaded', function(){
-  if (wantShowCancel()){
-    removeClass(qs('#readonlyActions'), 'd-none');
-    removeClass(qs('#cancelBtnDesktop'), 'd-none');
-    removeClass(qs('#cancelBtnMobile'), 'd-none');
-  }
+  removeClass(qs('#readonlyActions'), 'd-none');
+  removeClass(qs('#cancelBtnDesktop'), 'd-none');
+  removeClass(qs('#cancelBtnMobile'), 'd-none');
 });
 
 /* =====================
