@@ -273,7 +273,6 @@ html, body { overflow-x: hidden; }
               </button>
             </div>
             <div class="col-12 col-md-6 d-grid">
-              <!-- 修改後：手機隱藏、md(≥768px) 以上顯示 -->
               <a class="btn btn-outline-success btn-lg d-none d-md-block" href="https://lin.ee/OHk6Rn7" target="_blank" rel="noopener">
                 透過 LINE 洽詢付款
               </a>
@@ -308,7 +307,7 @@ html, body { overflow-x: hidden; }
     <li>施作前皆會進行基本功能檢測，確認機況正常後再進行清洗保養作業。</li>
     <li>施作如有拍攝照片或影片，可免費提供給您做為紀錄與備存參考。</li>
     <li>本服務享有14天保固期，如有異常使用狀況，請立即回報，我們將安排專人處理（※保固不包含因安裝不良或零件自然老化所導致之問題）。</li>
-    <li>若您有任何疑問或需進一步協助，歡迎直接點及下方窗口，直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
+    <li>若您有任何疑問或需進一步協助，歡迎直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
   </ol>
 
   <!-- 聯絡資訊 -->
@@ -576,8 +575,8 @@ function setupCancelButtonsVisibility(resource){
   const isCancelled =
     (resource?.resource_type === 'raw' && Array.isArray(resource?.tags) && resource.tags.includes('cancelled')) ||
     (resource?.context?.custom?.status === 'cancelled');
-  const isLocked = !!resource?.locked;
-  const show = isAdmin() && !isCancelled && !isLocked;
+  // ★ 不再用 locked 當隱藏依據，admin 仍可見取消鍵
+  const show = isAdmin() && !isCancelled;
 
   const dBtn = document.getElementById('cancelBtnDesktop');
   const mBtn = document.getElementById('cancelBtnMobile');
@@ -728,7 +727,7 @@ function collectShareData(){
     if (isLocallyLocked("locked:cid:"+cid)) { 
       document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
       document.getElementById("confirmBtnMobile")?.classList.add("d-none");
-      document.getElementById("readonlyActions")?.classList.add("d-none");
+      // ★ 管理者仍可看到動作區，故不在此處強制隱藏 #readonlyActions
     }
 
     try{
@@ -741,12 +740,13 @@ function collectShareData(){
 
       // 先判斷作廢（橫幅與隱藏同意）
       applyCancelStatus(payload);
-      // 管理者可見取消鍵（未作廢且未封存）
+      // 管理者可見取消鍵（未作廢；locked 不影響）
       setupCancelButtonsVisibility(payload);
 
       applyReadOnlyData(data); 
       applyMobileLabels();
-      setReadonlyButtonsVisibility(!locked);
+      setReadonlyButtonsVisibility(!locked); // ★ admin 一律可見動作區
+
       if (locked){
         const box = document.getElementById("cancelBanner");
         if (!box || box.classList.contains("d-none")) {
@@ -758,7 +758,9 @@ function collectShareData(){
         }
         document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
         document.getElementById("confirmBtnMobile")?.classList.add("d-none");
-        document.getElementById("readonlyActions")?.classList.add("d-none");
+        if (!isAdmin()) { // ★ 只有非 admin 才隱藏整個動作區
+          document.getElementById("readonlyActions")?.classList.add("d-none");
+        }
       }
       return;
     }catch(e){
@@ -767,7 +769,9 @@ function collectShareData(){
       forceReadOnlyBlank();
       document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
       document.getElementById("confirmBtnMobile")?.classList.add("d-none");
-      document.getElementById("readonlyActions")?.classList.add("d-none");
+      if (!isAdmin()) {
+        document.getElementById("readonlyActions")?.classList.add("d-none");
+      }
       return;
     }
   }
@@ -780,7 +784,9 @@ function collectShareData(){
       if (isLocallyLocked("locked:data:"+hash)) { 
         document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
         document.getElementById("confirmBtnMobile")?.classList.add("d-none");
-        document.getElementById("readonlyActions")?.classList.add("d-none");
+        if (!isAdmin()){
+          document.getElementById("readonlyActions")?.classList.add("d-none");
+        }
         const notice = document.createElement('div');
         notice.className = 'alert alert-success mt-2';
         notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
@@ -800,13 +806,21 @@ function collectShareData(){
   updateTotals(); applyMobileLabels();
 })();
 
+/* ★★★ 改動 1：admin 一律可見動作區（即使 locked=true） ★★★ */
 function setReadonlyButtonsVisibility(canConfirm){
+  const admin = isAdmin();
   const shareDesk = document.getElementById("shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
   const shareM   = document.getElementById("shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
-  const ro       = document.getElementById("readonlyActions"); if (ro) ro.classList.toggle("d-none", !canConfirm);
-  const mConfirm = document.getElementById("confirmBtnMobile");   if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm);
-  const dConfirm = document.getElementById("confirmBtnDesktop");  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
+  const ro       = document.getElementById("readonlyActions");
+  if (ro) ro.classList.toggle("d-none", !(canConfirm || admin)); // admin 可見
+
+  const mConfirm = document.getElementById("confirmBtnMobile");
+  if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm); // 同意鍵仍依 canConfirm 控制
+
+  const dConfirm = document.getElementById("confirmBtnDesktop");
+  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
 }
+
 function applyReadOnlyData(data){
   if(data.quoteInfo){
     const qi = document.getElementById("quoteInfo");
