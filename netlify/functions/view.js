@@ -58,7 +58,8 @@ export async function handler(event) {
     const raw = await r2.text();
     let data; try { data = JSON.parse(raw); } catch { data = raw; }
 
-    return resp(200, { locked, data, public_id: publicId, resource_type: rtype, type: dtype }, true);
+    const status = (meta?.context?.custom?.status || "");
+  return resp(200, { status,  locked, data, public_id: publicId, resource_type: rtype, type: dtype }, true);
 
   } catch (e) {
     console.error("[view.js] error:", e);
