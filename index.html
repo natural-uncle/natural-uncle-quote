@@ -326,6 +326,7 @@ html, body { overflow-x: hidden; }
   <!-- 唯讀（桌機）同意按鈕：唯讀未封存才顯示 -->
   <div id="readonlyActions" class="text-center mt-3 d-none">
     <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
+    <button id="cancelBtnDesktop" class="btn btn-outline-danger ms-2">取消/作廢</button>
   </div>
 
   <div id="shareLinkBox" class="link-box d-none"></div>
@@ -854,6 +855,11 @@ document.addEventListener('DOMContentLoaded', function(){
     callCancel(reason);
   });
   document.getElementById("cancelBtnMobile")?.addEventListener("click", ()=>{
+  document.getElementById("cancelBtnDesktop")?.addEventListener("click", ()=>{
+    const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
+    callCancel(reason);
+  });
+
     const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
     callCancel(reason);
   });
