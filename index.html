@@ -8,6 +8,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
+/* 讓完整預約時間在手機自動斷成兩行：日期一行、時間一行 */
+#cleanFull .cf-date,
+#cleanFull .cf-time { display: inline; }
+@media (max-width: 576px){
+  #cleanFull .cf-date,
+  #cleanFull .cf-time { display: block; line-height: 1.25; }
+}
 /* mobile-confirm styles */
 .mobile-bottom-bar{
   position: sticky; bottom: 0; left: 0; right: 0;
@@ -351,12 +358,20 @@ function updateCleanFull(){
   const dv = document.getElementById("cleanDate").value;
   const tv = document.getElementById("cleanTime").value;
   if(!dv || !tv) return;
+
   const dt = new Date(`${dv}T${tv}`);
   const wd = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"][dt.getDay()];
-  const yyyy = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
-  const hh = String(dt.getHours()).padStart(2,'0'), mi = String(dt.getMinutes()).padStart(2,'0');
+  const yyyy = dt.getFullYear();
+  const mm = String(dt.getMonth()+1).padStart(2,'0');
+  const dd = String(dt.getDate()).padStart(2,'0');
+  const hh = String(dt.getHours()).padStart(2,'0');
+  const mi = String(dt.getMinutes()).padStart(2,'0');
   const ampm = dt.getHours() < 12 ? "上午" : "下午";
-  document.getElementById("cleanFull").textContent = `${yyyy}/${mm}/${dd}（${wd}）${ampm} ${hh}:${mi} 開始`;
+
+  const dateStr = `${yyyy}/${mm}/${dd}（${wd}）`;
+  const timeStr = `${ampm} ${hh}:${mi} 開始`;
+  document.getElementById("cleanFull").innerHTML =
+    `<span class="cf-date">${dateStr}</span><span class="cf-time">${timeStr}</span>`;
 }
 document.getElementById("cleanDate").addEventListener("change", updateCleanFull);
 document.getElementById("cleanTime").addEventListener("change", updateCleanFull);
@@ -672,7 +687,18 @@ function applyReadOnlyData(data){
   document.getElementById("customerAddress").value= data.address   || "";
   document.getElementById("technicianName").value = data.technician|| "";
   document.getElementById("technicianPhone").value= data.techPhone || "";
-  document.getElementById("cleanFull").textContent= data.cleanTime || "尚未選擇";
+  (function(){
+  const cf = document.getElementById("cleanFull");
+  const s = data.cleanTime || "尚未選擇";
+  const m = s.match(/^(\d{4}\/\d{2}\/\d{2}（[^）]+）)\s*(上午|下午)?\s*([0-2]\d:[0-5]\d)/);
+  if (m) {
+    const datePart = m[1];
+    const timePart = `${m[2] ? m[2] + ' ' : ''}${m[3]} 開始`;
+    cf.innerHTML = `<span class="cf-date">${datePart}</span><span class="cf-time">${timePart}</span>`;
+  } else {
+    cf.textContent = s;
+  }
+})();
   // 在唯讀檢視中隱藏預約時間的輸入欄（只保留完整預約時間）
   (function(){
     const row = document.querySelector('#cleanFullBox .row');
