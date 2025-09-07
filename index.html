@@ -85,7 +85,7 @@ html, body { overflow-x: hidden; }
       body{ padding-bottom: 70px; }
     }
 
-    /* 手機底部固定工具列（只留產生連結） */
+    /* 手機底部固定工具列（顯示產生連結；取消/同意依邏輯控制） */
     .mobile-bottom-bar{
       position: fixed; left:0; right:0; bottom:0; z-index: 1030;
       background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%); color:#fff;
@@ -101,7 +101,6 @@ html, body { overflow-x: hidden; }
     .total-banner{
       background: #fff7e6; border:1px solid #ffd8a8; color:#d9480f;
       border-radius:12px; padding:10px 14px; display:inline-block; font-weight:900;
-      box-shadow: 0 2px 8px rgba(255,173,77,.15);
     }
     .total-banner #total{ font-size:1.4rem; }
   
@@ -126,6 +125,9 @@ html, body { overflow-x: hidden; }
   </div>
 
   <div id="quoteInfo" class="quote-info"></div>
+
+  <!-- 作廢橫幅 -->
+  <div id="cancelBanner" class="alert alert-danger d-none" role="alert"></div>
 
   <!-- 客戶資訊 -->
   <h5 class="section-title">客戶資訊</h5>
@@ -260,14 +262,14 @@ html, body { overflow-x: hidden; }
 
           <div class="row gy-2">
             <div class="col-12 col-md-6 d-grid">
-              <button class="btn btn-primary btn-lg" id="toggleAccountBtn" type="button" onclick="(function(){var b=document.getElementById('bankBox'); if(!b)return; b.classList.toggle('d-none'); if(!b.classList.contains('d-none')){b.scrollIntoView({behavior:'smooth',block:'center'}); b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');}})();">
+              <!-- 純按鈕，事件代理在下方掛載 -->
+              <button class="btn btn-primary btn-lg" id="toggleAccountBtn" type="button">
                 查看匯款資訊
               </button>
             </div>
             <div class="col-12 col-md-6 d-grid">
-              <!-- 修改後：手機隱藏、md(≥768px) 以上顯示 -->
-<a class="btn btn-outline-success btn-lg d-none d-md-block" href="https://lin.ee/OHk6Rn7" target="_blank" rel="noopener">
-  透過 LINE 洽詢付款
+              <a class="btn btn-outline-success btn-lg d-none d-md-block" href="https://lin.ee/OHk6Rn7" target="_blank" rel="noopener">
+                透過 LINE 洽詢付款
               </a>
             </div>
           </div>
@@ -291,7 +293,8 @@ html, body { overflow-x: hidden; }
         </div>
       </div>
     </section>
-    <!-- 保固條款 -->
+
+  <!-- 備註與保固條款 -->
   <h5 class="section-title">備註與保固條款</h5>
   <ol>
     <li>請於確認本報價內容無誤後，以按下「我同意此報價」按鈕回覆，以利後續安排作業。</li>
@@ -299,7 +302,7 @@ html, body { overflow-x: hidden; }
     <li>施作前皆會進行基本功能檢測，確認機況正常後再進行清洗保養作業。</li>
     <li>施作如有拍攝照片或影片，可免費提供給您做為紀錄與備存參考。</li>
     <li>本服務享有14天保固期，如有異常使用狀況，請立即回報，我們將安排專人處理（※保固不包含因安裝不良或零件自然老化所導致之問題）。</li>
-    <li>若您有任何疑問或需進一步協助，歡迎直接點及下方窗口，直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
+    <li>若您有任何疑問或需進一步協助，歡迎直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
   </ol>
 
   <!-- 聯絡資訊 -->
@@ -323,22 +326,22 @@ html, body { overflow-x: hidden; }
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
-  <!-- 唯讀（桌機）同意按鈕：唯讀未封存才顯示 -->
+  <!-- 唯讀（桌機）動作區：同意 + 取消（取消預設隱藏，僅 admin 顯示） -->
   <div id="readonlyActions" class="text-center mt-3 d-none">
     <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
-    <button id="cancelBtnDesktop" class="btn btn-outline-danger ms-2">取消/作廢</button>
+    <button id="cancelBtnDesktop" class="btn btn-outline-danger ms-2 d-none">取消/作廢</button>
   </div>
 
   <div id="shareLinkBox" class="link-box d-none"></div>
 
 </div>
 
-<!-- 手機底部固定工具列：只保留「產生連結」 -->
+<!-- 手機底部固定工具列 -->
 <div class="mobile-bottom-bar d-md-none">
   <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
   <div class="d-flex gap-2 flex-grow-1">
     <button class="btn btn-outline-light btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
-    <button class="btn btn-outline-danger btn-sm flex-fill" id="cancelBtnMobile">取消/作廢</button>
+    <button class="btn btn-outline-danger btn-sm flex-fill d-none" id="cancelBtnMobile">取消/作廢</button>
     <button class="btn btn-primary btn-sm flex-fill d-none" id="confirmBtnMobile">我同意此報價</button>
   </div>
 </div>
@@ -499,7 +502,94 @@ document.querySelector("#quoteTable tbody").addEventListener("click",(e)=>{
 function markLocallyLocked(key){ try{ localStorage.setItem(key, "1"); }catch(_){} }
 function isLocallyLocked(key){ try{ return localStorage.getItem(key)==="1"; }catch(_){ return false; } }
 
-/* ========== 送出「我同意此報價」（桌機） ========== */
+/* ========== applyCancelStatus：依 tags/context 顯示「已作廢」並隱藏按鈕 ========== */
+function applyCancelStatus(resource){
+  try{
+    let cancelled = false;
+    if (resource?.resource_type === "raw") {
+      const tags = resource?.tags || [];
+      if (Array.isArray(tags) && tags.includes("cancelled")) cancelled = true;
+    } else {
+      const status = resource?.context?.custom?.status;
+      if (status === "cancelled") cancelled = true;
+    }
+
+    if (cancelled) {
+      const banner = document.getElementById("cancelBanner");
+      if (banner) {
+        banner.classList.remove("d-none");
+        const reason = resource?.context?.custom?.cancel_reason || "";
+        const time = resource?.context?.custom?.cancel_time || "";
+        banner.textContent = `⚠️ 本報價單已作廢${time ? `（${new Date(time).toLocaleString()}）` : ""}${reason ? `，原因：${reason}` : ""}`;
+      }
+      document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
+      document.getElementById("confirmBtnMobile")?.classList.add("d-none");
+      document.getElementById("readonlyActions")?.classList.add("d-none");
+    }
+  }catch(e){
+    console.warn("applyCancelStatus error:", e);
+  }
+}
+
+/* ========== 管理者判斷 + 取消鍵顯示/綁定（?admin=1） ========== */
+function isAdmin(){
+  try{
+    const u = new URL(location.href);
+    const q = u.searchParams.get('admin');
+    if (q === '1') return true;
+    const m = (location.hash||'').match(/[?&]admin=(\d)/);
+    return m ? m[1] === '1' : false;
+  }catch(_){ return false; }
+}
+
+if (typeof callCancel !== 'function'){
+  async function callCancel(reason){
+    const m = (location.hash||'').match(/[#&?]cid=([^&]+)/);
+    const id = m ? decodeURIComponent(m[1]) : '';
+    if(!id){ alert('找不到報價單代號（cid）'); return; }
+    const r = await fetch('/.netlify/functions/cancel', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, reason })
+    });
+    const j = await r.json().catch(()=>null);
+    if (j && j.ok){
+      alert('已將此報價單作廢');
+      location.reload();
+    }else{
+      alert('作廢失敗：' + (j?.error || r.statusText || 'Unknown Error'));
+    }
+  }
+}
+
+function setupCancelButtonsVisibility(resource){
+  const isCancelled =
+    (resource?.resource_type === 'raw' && Array.isArray(resource?.tags) && resource.tags.includes('cancelled')) ||
+    (resource?.context?.custom?.status === 'cancelled');
+  const show = isAdmin() && !isCancelled;
+
+  const dBtn = document.getElementById('cancelBtnDesktop');
+  const mBtn = document.getElementById('cancelBtnMobile');
+
+  if (dBtn) dBtn.classList.toggle('d-none', !show);
+  if (mBtn) mBtn.classList.toggle('d-none', !show);
+
+  if (dBtn && !dBtn.dataset.bound){
+    dBtn.addEventListener('click', ()=>{
+      const reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+      callCancel(reason);
+    });
+    dBtn.dataset.bound = '1';
+  }
+  if (mBtn && !mBtn.dataset.bound){
+    mBtn.addEventListener('click', ()=>{
+      const reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+      callCancel(reason);
+    });
+    mBtn.dataset.bound = '1';
+  }
+}
+
+/* ========== 送出「我同意此報價」（桌機/手機） ========== */
 async function handleConfirmSubmit(clickedBtn){
   if (clickedBtn && clickedBtn.disabled) return;
   const originalText = clickedBtn ? clickedBtn.textContent : "";
@@ -522,7 +612,7 @@ async function handleConfirmSubmit(clickedBtn){
     await res.json();
 
     alert(`✅ 感謝您的確認，我們明日見囉！😊
-    
+
 為確保清洗順利進行，煩請提前清出冷氣室內機下方空間，以便擺放 A 字梯。
 
 若下方為以下家具，將由現場人員視情況協助判斷是否可移動，敬請見諒：
@@ -556,9 +646,8 @@ async function handleConfirmSubmit(clickedBtn){
   }
 }
 document.getElementById('confirmBtnDesktop')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
-
-
 document.getElementById('confirmBtnMobile')?.addEventListener('click', function(){ handleConfirmSubmit(this); });
+
 /* ========== 產生分享連結（含一鍵複製） ========== */
 async function handleShareClick(){
   try{
@@ -624,7 +713,10 @@ function collectShareData(){
   // 新型連結：#cid=完整 public_id（可能含資料夾）
   if (hash.startsWith("#cid=")) {
     const cid = decodeURIComponent(hash.replace("#cid=",""));
-    if (isLocallyLocked("locked:cid:"+cid)) { hideConfirmButtons(); }
+    if (isLocallyLocked("locked:cid:"+cid)) { 
+      document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
+      document.getElementById("confirmBtnMobile")?.classList.add("d-none");
+    }
 
     try{
       const r = await fetch(`/.netlify/functions/view?id=${encodeURIComponent(cid)}&ts=${Date.now()}`, { cache:"no-store" });
@@ -634,15 +726,37 @@ function collectShareData(){
       const data = payload?.data || {};
       const locked = !!payload?.locked;
 
-      applyReadOnlyData(data); applyMobileLabels();
+      applyCancelStatus(payload);
+      setupCancelButtonsVisibility(payload);
+
+      applyReadOnlyData(data); 
+      applyMobileLabels();
       setReadonlyButtonsVisibility(!locked);
-      if (locked){ showLockedNotice(); hideConfirmButtons(); }
+
+      if (locked){
+        const box = document.getElementById("cancelBanner");
+        if (!box || box.classList.contains("d-none")) {
+          const notice = document.createElement('div');
+          notice.className = 'alert alert-success mt-2';
+          notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
+          document.querySelector('.container-quote').prepend(notice);
+        }
+        document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
+        document.getElementById("confirmBtnMobile")?.classList.add("d-none");
+        if (!isAdmin()) {
+          document.getElementById("readonlyActions")?.classList.add("d-none");
+        }
+      }
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
       alert("此連結已失效或資料讀取失敗。");
-      forceReadOnlyBlank(); // ⬅️ 不再顯示已封存
-      hideConfirmButtons();
+      forceReadOnlyBlank();
+      document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
+      document.getElementById("confirmBtnMobile")?.classList.add("d-none");
+      if (!isAdmin()) {
+        document.getElementById("readonlyActions")?.classList.add("d-none");
+      }
       return;
     }
   }
@@ -652,32 +766,46 @@ function collectShareData(){
     try{
       const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
       applyReadOnlyData(data); applyMobileLabels();
-      if (isLocallyLocked("locked:data:"+hash)) { hideConfirmButtons(); showLockedNotice(); }
-      else { setReadonlyButtonsVisibility(true); }
+      if (isLocallyLocked("locked:data:"+hash)) { 
+        document.getElementById("confirmBtnDesktop")?.classList.add("d-none");
+        document.getElementById("confirmBtnMobile")?.classList.add("d-none");
+        if (!isAdmin()){
+          document.getElementById("readonlyActions")?.classList.add("d-none");
+        }
+        const notice = document.createElement('div');
+        notice.className = 'alert alert-success mt-2';
+        notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
+        document.querySelector('.container-quote').prepend(notice);
+      } else { 
+        setReadonlyButtonsVisibility(true); 
+      }
       return;
-    }catch(err){ console.error("讀取分享資料失敗：", err); updateTotals(); applyMobileLabels(); return; }
+    }catch(err){ 
+      console.error("讀取分享資料失敗：", err); 
+      updateTotals(); applyMobileLabels(); 
+      return; 
+    }
   }
 
   // 無 hash：編輯模式
   updateTotals(); applyMobileLabels();
 })();
 
+/* admin 一律可見動作區（即使 locked=true） */
 function setReadonlyButtonsVisibility(canConfirm){
+  const admin = isAdmin();
   const shareDesk = document.getElementById("shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
   const shareM   = document.getElementById("shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
-  const ro       = document.getElementById("readonlyActions"); if (ro) ro.classList.toggle("d-none", !canConfirm);
-  const mConfirm = document.getElementById("confirmBtnMobile");   if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm);
-  const dConfirm = document.getElementById("confirmBtnDesktop");  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
-}
-function hideConfirmButtons(){
-  const d = document.getElementById("confirmBtnDesktop");
-  const ro = document.getElementById("readonlyActions");
-  const m = document.getElementById("confirmBtnMobile");
-  if (d){ d.style.display = "none"; }
-  if (ro){ ro.classList.add("d-none"); }
-  if (m){ m.classList.add("d-none"); }
+  const ro       = document.getElementById("readonlyActions");
+  if (ro) ro.classList.toggle("d-none", !(canConfirm || admin));
 
+  const mConfirm = document.getElementById("confirmBtnMobile");
+  if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm);
+
+  const dConfirm = document.getElementById("confirmBtnDesktop");
+  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
 }
+
 function applyReadOnlyData(data){
   if(data.quoteInfo){
     const qi = document.getElementById("quoteInfo");
@@ -690,18 +818,18 @@ function applyReadOnlyData(data){
   document.getElementById("technicianName").value = data.technician|| "";
   document.getElementById("technicianPhone").value= data.techPhone || "";
   (function(){
-  const cf = document.getElementById("cleanFull");
-  const s = data.cleanTime || "尚未選擇";
-  const m = s.match(/^(\d{4}\/\d{2}\/\d{2}（[^）]+）)\s*(上午|下午)?\s*([0-2]\d:[0-5]\d)/);
-  if (m) {
-    const datePart = m[1];
-    const timePart = `${m[2] ? m[2] + ' ' : ''}${m[3]} 開始`;
-    cf.innerHTML = `<span class="cf-date">${datePart}</span><span class="cf-time">${timePart}</span>`;
-  } else {
-    cf.textContent = s;
-  }
-})();
-  // 在唯讀檢視中隱藏預約時間的輸入欄（只保留完整預約時間）
+    const cf = document.getElementById("cleanFull");
+    const s = data.cleanTime || "尚未選擇";
+    const m = s.match(/^(\d{4}\/\d{2}\/\d{2}（[^）]+）)\s*(上午|下午)?\s*([0-2]\d:[0-5]\d)/);
+    if (m) {
+      const datePart = m[1];
+      const timePart = `${m[2] ? m[2] + ' ' : ''}${m[3]} 開始`;
+      cf.innerHTML = `<span class="cf-date">${datePart}</span><span class="cf-time">${timePart}</span>`;
+    } else {
+      cf.textContent = s;
+    }
+  })();
+
   (function(){
     const row = document.querySelector('#cleanFullBox .row');
     if (row) row.style.display = 'none';
@@ -731,12 +859,6 @@ function applyReadOnlyData(data){
   ["addRow","shareLinkBtn","shareLinkBtnMobile"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
   updateTotals();
 }
-function showLockedNotice(){
-  const box = document.createElement('div');
-  box.className = 'alert alert-success mt-2';
-  box.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
-  document.querySelector('.container-quote').prepend(box);
-}
 function forceReadOnlyBlank(){
   document.querySelectorAll("input, textarea, select").forEach(el=>{
     if (el.tagName === "SELECT") el.setAttribute("disabled", true);
@@ -744,42 +866,10 @@ function forceReadOnlyBlank(){
   });
   ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnDesktop","readonlyActions"].forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display="none"; });
 }
-
-/* ========== 付款方式：顯示/隱藏 + 一鍵複製 ========== */
-(function setupPaymentBox(){
-  const toggleBtn = document.getElementById('toggleAccountBtn');
-  const bankBox = document.getElementById('bankBox');
-  const copyBtn = document.getElementById('copyAccountBtn');
-  toggleBtn?.addEventListener('click', ()=>{
-    bankBox?.classList.toggle('d-none');
-    if (!bankBox?.classList.contains('d-none')) {
-      toggleBtn.textContent = "🙈 隱藏匯款資訊";
-    } else {
-      toggleBtn.textContent = "💳 查看匯款資訊";
-    }
-  });
-  copyBtn?.addEventListener('click', async ()=>{
-    const account = document.getElementById('bankAccount')?.value || "";
-    try{
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(account);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = account; document.body.appendChild(ta);
-        ta.select(); document.execCommand('copy'); ta.remove();
-      }
-      const orig = copyBtn.textContent;
-      copyBtn.textContent = "✅ 已複製";
-      setTimeout(()=> copyBtn.textContent = orig, 1500);
-    }catch(_){
-      alert("複製失敗，請手動選取帳號");
-    }
-  });
-})();
-
 </script>
 
 <script>
+/* ========== 付款：顯示/隱藏 + 一鍵複製（輔助） ========== */
 document.addEventListener('DOMContentLoaded', function(){
   try{
     const btn = document.getElementById('toggleAccountBtn');
@@ -805,117 +895,90 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }catch(e){ /* swallow */ }
 });
-
-/* ===== 取消/作廢報價單：前端整合 ===== */
-(function(){
-  function esc(s){ return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-  function getCurrentPublicIdFromUrl(){
-    try{
-      const m = (location.hash||"").match(/[#&?]cid=([^&]+)/);
-      let id = m ? decodeURIComponent(m[1]) : "";
-      if (!id) return "";
-      // 去除副檔名、雜訊
-      id = id.replace(/[?#].*$/,"").replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i,"");
-      return id;
-    }catch{ return ""; }
-  }
-  function markCancelledUI(reason, time){
-    let banner = document.querySelector(".quote-cancelled-banner");
-    if(!banner){
-      banner = document.createElement("div");
-      banner.className = "quote-cancelled-banner";
-      const top = document.querySelector(".header") || document.body;
-      top.prepend(banner);
-    }
-    banner.innerHTML = `此報價單已作廢${time ? "（" + new Date(time).toLocaleString() + "）" : ""}${reason ? "，原因：" + esc(reason) : ""}`;
-  }
-  function hideConfirmButtons(){
-    document.getElementById("confirmBtn")?.classList.add("d-none");
-    document.getElementById("confirmBtnMobile")?.classList.add("d-none");
-  }
-  async function callCancel(reason){
-    const id = getCurrentPublicIdFromUrl();
-    if(!id){ alert("找不到報價單代號（cid）"); return; }
-    const r = await fetch("/.netlify/functions/cancel", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ id, reason })
-    });
-    const j = await r.json().catch(()=>null);
-    if (j && j.ok){
-      markCancelledUI(j?.context?.cancel_reason, j?.context?.cancel_time);
-      hideConfirmButtons();
-      alert("已將此報價單作廢");
-    }else{
-      alert("作廢失敗：" + (j?.error || r.statusText || "Unknown Error"));
-    }
-  }
-  // 若後端 view API 已回傳 status，可在你現有的初始化流程拿到後設定 UI：
-  // 例如：if (window.__QUOTE_VIEW_STATUS__ === "cancelled") { markCancelledUI(); hideConfirmButtons(); 
-  // === 統一取消/作廢事件綁定（桌面編輯 / 手機底部 / 桌機唯讀） ===
-  function bindCancelButton(id){
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.addEventListener("click", ()=>{
-      const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
-      callCancel(reason);
-    });
-  }
-  ["cancelBtn","cancelBtnMobile","cancelBtnDesktop"].forEach(bindCancelButton);
-}
-})();
 </script>
-<style>
-.quote-cancelled-banner{
-  background:#fee; border:1px solid #f99; color:#900;
-  padding:.5rem .75rem; border-radius:8px; margin:.5rem 0 1rem; font-weight:600;
-}
-</style>
 
+<!-- === Safe-Mode Boot：強制顯示取消鍵＋匯款按鈕代理 === -->
 <script>
 (function(){
-  function ready(fn){
-    if (document.readyState !== "loading") fn();
-    else document.addEventListener("DOMContentLoaded", fn);
-  }
-  function esc(s){ return String(s||""); }
-  function getCurrentPublicIdFromUrl(){
+  function isAdminSafe(){
     try{
-      const m = (location.hash||"").match(/[#&?]cid=([^&]+)/);
-      let id = m ? decodeURIComponent(m[1]) : "";
-      if (!id) return "";
-      id = id.replace(/[?#].*$/,"").replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i,"");
-      return id;
-    }catch{ return ""; }
+      const u = new URL(location.href);
+      if (u.searchParams.get('admin') === '1') return true;
+      const m = (location.hash||'').match(/[?&]admin=(\d)/);
+      return m ? m[1] === '1' : false;
+    }catch(_){ return false; }
   }
-  async function callCancel(reason){
-    const id = getCurrentPublicIdFromUrl();
-    if(!id){ alert("找不到報價單代號（cid）"); return; }
-    const r = await fetch("/.netlify/functions/cancel", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ id, reason })
-    });
-    const j = await r.json().catch(()=>null);
-    if (j && j.ok){
-      alert("已將此報價單作廢");
-      location.reload();
-    }else{
-      alert("作廢失敗：" + (j?.error || r.statusText || "Unknown Error"));
+  document.addEventListener('DOMContentLoaded', function(){
+    if (!isAdminSafe()) return;
+    var ro = document.getElementById('readonlyActions');
+    var d = document.getElementById('cancelBtnDesktop');
+    var m = document.getElementById('cancelBtnMobile');
+    if (ro) ro.classList.remove('d-none');
+    if (d) d.classList.remove('d-none');
+    if (m) m.classList.remove('d-none');
+  });
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t) return;
+    if (t.id === 'toggleAccountBtn'){
+      var box = document.getElementById('bankBox');
+      if (!box) return;
+      box.classList.toggle('d-none');
+      t.textContent = box.classList.contains('d-none') ? '查看匯款資訊' : '🙈 隱藏匯款資訊';
+      if (!box.classList.contains('d-none')){
+        try{ box.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){}
+      }
     }
-  }
-  function bindCancelButton(id){
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.addEventListener("click", ()=>{
-      const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
-      callCancel(reason);
-    });
-  }
-  ready(function(){
-    ["cancelBtn","cancelBtnMobile","cancelBtnDesktop"].forEach(bindCancelButton);
+    if (t.id === 'copyAccountBtn'){
+      var acct = document.getElementById('bankAccount');
+      if (!acct) return;
+      try{
+        navigator.clipboard.writeText(acct.value).then(function(){
+          var orig = t.textContent;
+          t.textContent = '✅ 已複製';
+          setTimeout(function(){ t.textContent = orig; }, 1200);
+        });
+      }catch(_){}
+    }
   });
 })();
 </script>
+
+<!-- === Cancel fallback：若前面未綁定，至少確保可用 === -->
+<script>
+(function(){
+  if (typeof window.callCancel !== 'function'){
+    window.callCancel = async function(reason){
+      try{
+        var m = (location.hash||'').match(/[#&?]cid=([^&]+)/);
+        var id = m ? decodeURIComponent(m[1]) : '';
+        if(!id){ alert('找不到報價單代號（cid）'); return; }
+        var r = await fetch('/.netlify/functions/cancel', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ id: id, reason: reason||'' })
+        });
+        var j = await r.json().catch(function(){ return null; });
+        if (j && j.ok){
+          alert('已將此報價單作廢');
+          location.reload();
+        }else{
+          alert('作廢失敗：' + (j?.error || r.statusText || 'Unknown Error'));
+        }
+      }catch(e){
+        alert('作廢失敗：' + (e?.message || e));
+      }
+    };
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t) return;
+    if (t.id === 'cancelBtnDesktop' || t.id === 'cancelBtnMobile'){
+      var reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+      window.callCancel(reason);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
