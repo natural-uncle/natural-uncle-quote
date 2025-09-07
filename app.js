@@ -527,7 +527,7 @@ applyReadOnlyData(data);
 
       if (locked){
         const notice = document.createElement('div');
-        notice.className = 'alert alert-success mt-2';
+        notice.className = 'alert alert-success alert-strong mt-2';
         notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
         qs('.container-quote').prepend(notice);
         addClass(qs("#confirmBtnDesktop"), "d-none");
@@ -556,7 +556,7 @@ applyReadOnlyData(data);
         addClass(qs("#confirmBtnMobile"), "d-none");
         if (!isAdmin()) addClass(qs("#readonlyActions"), "d-none");
         const notice = document.createElement('div');
-        notice.className = 'alert alert-success mt-2';
+        notice.className = 'alert alert-success alert-strong mt-2';
         notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
         qs('.container-quote').prepend(notice);
       } else { 
