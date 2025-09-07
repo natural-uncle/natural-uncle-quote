@@ -337,6 +337,7 @@ html, body { overflow-x: hidden; }
   <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
   <div class="d-flex gap-2 flex-grow-1">
     <button class="btn btn-outline-light btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
+    <button class="btn btn-outline-danger btn-sm flex-fill" id="cancelBtnMobile">取消/作廢</button>
     <button class="btn btn-primary btn-sm flex-fill d-none" id="confirmBtnMobile">我同意此報價</button>
   </div>
 </div>
@@ -803,7 +804,70 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }catch(e){ /* swallow */ }
 });
+
+/* ===== 取消/作廢報價單：前端整合 ===== */
+(function(){
+  function esc(s){ return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function getCurrentPublicIdFromUrl(){
+    try{
+      const m = (location.hash||"").match(/[#&?]cid=([^&]+)/);
+      let id = m ? decodeURIComponent(m[1]) : "";
+      if (!id) return "";
+      // 去除副檔名、雜訊
+      id = id.replace(/[?#].*$/,"").replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i,"");
+      return id;
+    }catch{ return ""; }
+  }
+  function markCancelledUI(reason, time){
+    let banner = document.querySelector(".quote-cancelled-banner");
+    if(!banner){
+      banner = document.createElement("div");
+      banner.className = "quote-cancelled-banner";
+      const top = document.querySelector(".header") || document.body;
+      top.prepend(banner);
+    }
+    banner.innerHTML = `此報價單已作廢${time ? "（" + new Date(time).toLocaleString() + "）" : ""}${reason ? "，原因：" + esc(reason) : ""}`;
+  }
+  function hideConfirmButtons(){
+    document.getElementById("confirmBtn")?.classList.add("d-none");
+    document.getElementById("confirmBtnMobile")?.classList.add("d-none");
+  }
+  async function callCancel(reason){
+    const id = getCurrentPublicIdFromUrl();
+    if(!id){ alert("找不到報價單代號（cid）"); return; }
+    const r = await fetch("/.netlify/functions/cancel", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ id, reason })
+    });
+    const j = await r.json().catch(()=>null);
+    if (j && j.ok){
+      markCancelledUI(j?.context?.cancel_reason, j?.context?.cancel_time);
+      hideConfirmButtons();
+      alert("已將此報價單作廢");
+    }else{
+      alert("作廢失敗：" + (j?.error || r.statusText || "Unknown Error"));
+    }
+  }
+  document.getElementById("cancelBtn")?.addEventListener("click", ()=>{
+    const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
+    callCancel(reason);
+  });
+  document.getElementById("cancelBtnMobile")?.addEventListener("click", ()=>{
+    const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
+    callCancel(reason);
+  });
+
+  // 若後端 view API 已回傳 status，可在你現有的初始化流程拿到後設定 UI：
+  // 例如：if (window.__QUOTE_VIEW_STATUS__ === "cancelled") { markCancelledUI(); hideConfirmButtons(); }
+})();
 </script>
-        
+<style>
+.quote-cancelled-banner{
+  background:#fee; border:1px solid #f99; color:#900;
+  padding:.5rem .75rem; border-radius:8px; margin:.5rem 0 1rem; font-weight:600;
+}
+</style>
+<script>
 </body>
 </html>
