@@ -15,6 +15,35 @@ function addClass(el, c){ if (el) el.classList.add(c); }
 function removeClass(el, c){ if (el) el.classList.remove(c); }
 function toggle(el, show){ if (el) el.classList.toggle('d-none', !show); }
 
+/* ====== 狀態顯示（橫幅 + 浮水印） ====== */
+function updateStatusUI(kind, opts){
+  // kind: 'cancelled' | 'archived'
+  const banner = qs('#statusBanner');
+  const bw = qs('#bigWatermark');
+  if (!banner || !bw) return;
+  const titleEl = banner.querySelector('.title');
+  const subEl = banner.querySelector('.sub');
+  banner.classList.remove('d-none','status-cancelled','status-archived','alert-danger','alert-info');
+  bw.classList.remove('d-none','wm-cancelled','wm-archived');
+
+  if (kind === 'cancelled'){
+    banner.classList.add('status-cancelled');
+    if (titleEl) titleEl.textContent = '⚠️ 本報價單已作廢';
+    if (subEl) subEl.textContent = opts?.sub || '';
+    bw.classList.add('wm-cancelled');
+    bw.querySelector('.wm-text').textContent = '已作廢';
+  } else if (kind === 'archived'){
+    banner.classList.add('status-archived');
+    if (titleEl) titleEl.textContent = '此報價單已完成確認並封存，僅供查看。';
+    if (subEl) subEl.textContent = opts?.sub || '';
+    bw.classList.add('wm-archived');
+    bw.querySelector('.wm-text').textContent = '封存';
+  }
+  // show
+  banner.classList.remove('d-none');
+  bw.classList.remove('d-none');
+}
+
 // ========== Mobile bottom bar visibility helper（ChatGPT Patch） ==========
 function setMobileBottomBar(show){
   const bar = document.querySelector('.mobile-bottom-bar');
@@ -511,9 +540,21 @@ document.addEventListener('DOMContentLoaded', function(){
       const locked = !!payload?.locked;
 
       applyCancelStatus(payload);
-      setupCancelButtonsVisibility(payload);
-      
-  // ChatGPT Patch: hide mobile action bar on cancelled or confirmed & archived (locked)
+      $1
+  // 根據狀態顯示強化版橫幅與浮水印
+  try {
+    const res = extractResource(payload) || {};
+    const ctx = (res.context && res.context.custom) || {};
+    const isCancelled = (Array.isArray(res.tags) && res.tags.includes('cancelled')) || (ctx.status === 'cancelled');
+    const isLocked = (ctx.locked === '1' || ctx.locked === 1 || payload.locked === true);
+    const timeStr = (ctx.cancelledAt || ctx.confirmedAt) ? new Date(ctx.cancelledAt || ctx.confirmedAt).toLocaleString() : '';
+    if (isCancelled){
+      updateStatusUI('cancelled', { sub: timeStr ? `（${timeStr}）` : '' });
+    } else if (isLocked){
+      updateStatusUI('archived', { sub: timeStr ? `（${timeStr}）` : '' });
+    }
+  }catch(_){}
+// ChatGPT Patch: hide mobile action bar on cancelled or confirmed & archived (locked)
   try{
     const res = extractResource(payload) || {};
     const ctx = (res.context && res.context.custom) || {};
@@ -606,8 +647,8 @@ async function callCancel(reason) {
     if (banner) {
       const when = (data && (data.cancelledAt || data.updatedAt)) || Date.now();
       const timeStr = new Date(when).toLocaleString();
-      banner.classList.remove('d-none');
-      banner.textContent = `⚠️ 本報價單已作廢（${timeStr}）${reason ? `，原因：${reason}` : ""}`;
+      $1
+    try{ updateStatusUI('cancelled', { sub: '' }); }catch(_){} 
     }
     window.__QUOTE_CANCELLED__ = true;
     if (dBtn) dBtn.classList.add('d-none');
