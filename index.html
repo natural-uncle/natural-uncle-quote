@@ -850,22 +850,19 @@ document.addEventListener('DOMContentLoaded', function(){
       alert("作廢失敗：" + (j?.error || r.statusText || "Unknown Error"));
     }
   }
-  document.getElementById("cancelBtn")?.addEventListener("click", ()=>{
-    const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
-    callCancel(reason);
-  });
-  document.getElementById("cancelBtnMobile")?.addEventListener("click", ()=>{
-  document.getElementById("cancelBtnDesktop")?.addEventListener("click", ()=>{
-    const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
-    callCancel(reason);
-  });
-
-    const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
-    callCancel(reason);
-  });
-
   // 若後端 view API 已回傳 status，可在你現有的初始化流程拿到後設定 UI：
-  // 例如：if (window.__QUOTE_VIEW_STATUS__ === "cancelled") { markCancelledUI(); hideConfirmButtons(); }
+  // 例如：if (window.__QUOTE_VIEW_STATUS__ === "cancelled") { markCancelledUI(); hideConfirmButtons(); 
+  // === 統一取消/作廢事件綁定（桌面編輯 / 手機底部 / 桌機唯讀） ===
+  function bindCancelButton(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener("click", ()=>{
+      const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
+      callCancel(reason);
+    });
+  }
+  ["cancelBtn","cancelBtnMobile","cancelBtnDesktop"].forEach(bindCancelButton);
+}
 })();
 </script>
 <style>
