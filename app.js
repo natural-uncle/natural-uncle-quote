@@ -27,6 +27,14 @@ function updateStatusUI(kind, opts){
   bw.classList.remove('d-none','wm-cancelled','wm-archived');
 
   if (kind === 'cancelled'){
+  } else if (kind === 'error'){
+    banner.classList.add('status-error');
+    if (titleEl) titleEl.textContent = '顯示錯誤';
+    if (subEl) subEl.textContent = (opts?.sub || '此連結已失效或資料讀取失敗。');
+    bw.classList.add('wm-error');
+    bw.querySelector('.wm-text').textContent = 'ERROR';
+    
+
     banner.classList.add('status-cancelled');
     if (titleEl) titleEl.textContent = '⚠️ 本報價單已作廢';
     if (subEl) subEl.textContent = opts?.sub || '';
@@ -578,10 +586,13 @@ applyReadOnlyData(data);
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
-      alert("此連結已失效或資料讀取失敗。");
+      try{ updateStatusUI("error", { sub: "此連結已失效或資料讀取失敗。" }); }catch(_){}
       forceReadOnlyBlank();
+      try{ setMobileBottomBar(false); }catch(_){}
       addClass(qs("#confirmBtnDesktop"), "d-none");
       addClass(qs("#confirmBtnMobile"), "d-none");
+      addClass(qs("#cancelBtnDesktop"), "d-none");
+      addClass(qs("#cancelBtnMobile"), "d-none");
       if (!isAdmin()) addClass(qs("#readonlyActions"), "d-none");
       return;
     }
@@ -605,8 +616,12 @@ applyReadOnlyData(data);
       }
       return;
     }catch(err){ 
-      console.error("讀取分享資料失敗：", err); 
-      updateTotals(); applyMobileLabels(); 
+      console.error("讀取分享資料失敗：", err);
+      try{ updateStatusUI("error", { sub: "此連結已失效或資料讀取失敗。" }); }catch(_){}
+      try{ setMobileBottomBar(false); }catch(_){}
+      // 隱藏動作按鈕
+      addClass(qs("#confirmBtnDesktop"), "d-none"); addClass(qs("#confirmBtnMobile"), "d-none");
+      addClass(qs("#cancelBtnDesktop"), "d-none"); addClass(qs("#cancelBtnMobile"), "d-none");
       return; 
     }
   }
