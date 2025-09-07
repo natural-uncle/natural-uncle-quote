@@ -1,4 +1,4 @@
-// netlify/functions/cancel.js (v4 - hybrid for raw vs image/video)
+// netlify/functions/cancel.js (v5 - raw 用 tags, image/video 用 context)
 import crypto from "crypto";
 
 const RTYPES = ["raw","image","video"];
@@ -24,29 +24,36 @@ export async function handler(event){
     if(!meta) return json(404,{error:"Resource not found", id});
 
     const nowISO = new Date().toISOString();
+
+    // === RAW 檔案 → 用 tags ===
+    if(meta.resource_type==="raw"){
+      const auth = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+      const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/raw/upload/${encodeURIComponent(meta.public_id)}`;
+      const tags = [
+        "locked",
+        "cancelled",
+        `cancel_time_${nowISO}`,
+      ];
+      if(reason) tags.push(`cancel_reason_${sanitize(reason)}`);
+
+      const r = await fetch(url, {
+        method:"POST",
+        headers:{ Authorization: auth, "Content-Type":"application/json" },
+        body: JSON.stringify({ tags: tags.join(",") })
+      });
+      const txt = await r.text();
+      if(!r.ok) return json(502,{error:"Failed to update tags (raw)", status:r.status, response:txt});
+      let parsed=null; try{parsed=JSON.parse(txt);}catch{}
+      return json(200,{ok:true, id:meta.public_id, resource_type:"raw", tags, raw:parsed||txt});
+    }
+
+    // === IMAGE / VIDEO → 用 Upload API context ===
     const contextData = {
       locked:"1",
       status:"cancelled",
       cancel_reason: reason,
       cancel_time: nowISO
     };
-
-    // raw → Admin API update
-    if(meta.resource_type==="raw"){
-      const auth = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
-      const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/raw/upload/${encodeURIComponent(meta.public_id)}`;
-      const r = await fetch(url, {
-        method:"POST",
-        headers:{ Authorization: auth, "Content-Type":"application/json" },
-        body: JSON.stringify({ context: { custom: contextData } })
-      });
-      const txt = await r.text();
-      if(!r.ok) return json(502,{error:"Failed to update context (Admin API)", status:r.status, response:txt});
-      let parsed=null; try{parsed=JSON.parse(txt);}catch{}
-      return json(200,{ok:true, id:meta.public_id, resource_type:meta.resource_type, context:contextData, raw:parsed||txt});
-    }
-
-    // image/video → Upload API /context
     const contextKV = Object.entries(contextData)
       .map(([k,v])=>`${k}=${String(v).replace(/\|/g,"/")}`).join("|");
     const timestamp = Math.floor(Date.now()/1000);
@@ -82,6 +89,10 @@ function signParams(params, apiSecret){
     .join("&");
   const toSign = entries+apiSecret;
   return crypto.createHash("sha1").update(toSign).digest("hex");
+}
+
+function sanitize(s){
+  return s.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,50);
 }
 
 function normalizeId(id){
