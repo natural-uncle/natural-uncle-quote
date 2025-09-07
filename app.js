@@ -677,19 +677,21 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 
-// === Cancellation Warning Modal (localized & balanced) ===
+
+// === Cancellation Warning Modal (debuggable & overrideable) ===
 (function(){
+  function log(...args){ try{ console.debug('[CancelModal]', ...args); }catch(e){} }
+
   function normalize(v){ return (v==null?'':String(v)).trim().toLowerCase(); }
 
-  // Map various language/status terms to a canonical cancelled boolean
   function isCancelledWord(s){
     s = normalize(s);
-    // accept exact matches only (avoid false positives)
-    const CANCEL_WORDS = new Set([
-      'cancelled','canceled','void','voided',
-      '作廢','已作廢','取消','已取消','作廢單','作廢中'
-    ]);
-    return CANCEL_WORDS.has(s);
+    // common zh/eng variants (exact match)
+    const WORDS = new Set(['cancelled','canceled','void','voided','作廢','已作廢','取消','已取消','作廢單','作廢中']);
+    // also accept wrapped variants like 「已作廢」 with punctuation or spaces
+    const cleaned = s.replace(/[\s\u3000\uFF08\uFF09\(\)\[\]【】「」『』]/g,'');
+    if (WORDS.has(s) || WORDS.has(cleaned)) return true;
+    return false;
   }
 
   function getQuoteId(){
@@ -709,11 +711,13 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function getExplicitStatus(){
-    // status string from multiple sources
     try { if (window.quote && (window.quote.status || window.quote.state)) return normalize(window.quote.status || window.quote.state); } catch(e){}
     if (typeof window.QUOTE_STATUS !== 'undefined') return normalize(window.QUOTE_STATUS);
-    const bodyStatus = (document.body && (document.body.dataset.quoteStatus || document.body.dataset.status));
-    if (bodyStatus) return normalize(bodyStatus);
+    const b = document.body;
+    if (b){
+      const bodyStatus = b.dataset.quoteStatus || b.dataset.status;
+      if (bodyStatus) return normalize(bodyStatus);
+    }
     const meta = document.querySelector('meta[name="quote:status"]');
     if (meta && meta.content) return normalize(meta.content);
     try { const u = new URL(window.location.href); const qs = u.searchParams.get('status'); if (qs) return normalize(qs); } catch(e){}
@@ -721,7 +725,6 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function getBooleanFlags(){
-    // true/false flags from multiple sources
     try {
       if (window.quote && (typeof window.quote.cancelled !== 'undefined' || typeof window.quote.canceled !== 'undefined' || typeof window.quote.is_cancelled !== 'undefined')){
         return Boolean(window.quote.cancelled || window.quote.canceled || window.quote.is_cancelled);
@@ -743,13 +746,23 @@ document.addEventListener('DOMContentLoaded', function(){
     return false;
   }
 
+  // Manual overrides for testing / fallback
+  function hasManualOverride(){
+    try {
+      if (window.__FORCE_CANCEL_MODAL__ === true) return true;
+      const b = document.body;
+      if (b && b.dataset.showCancelModal === 'true') return true;
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('show_cancel_modal') === '1') return true;
+    } catch(e){}
+    return false;
+  }
+
   function detectCancelled(){
-    // Priority 1: explicit boolean flags
+    if (hasManualOverride()) return true;
     if (getBooleanFlags()) return true;
-    // Priority 2: explicit status text (localized)
     const s = getExplicitStatus();
     if (isCancelledWord(s)) return true;
-    // Unknown or non-cancelled -> do not show
     return false;
   }
 
@@ -777,13 +790,31 @@ document.addEventListener('DOMContentLoaded', function(){
     backdrop.addEventListener('click', function(e){ if (e.target === backdrop) close(); });
   }
 
+  function diagnostics(){
+    const diag = {
+      quoteId: getQuoteId(),
+      explicitStatus: getExplicitStatus(),
+      booleanFlags: getBooleanFlags(),
+      manualOverride: hasManualOverride(),
+      reason: getCancelReason()
+    };
+    log('diagnostics', diag);
+    return diag;
+  }
+
   function maybeShow(){
-    if (!detectCancelled()) return;
-    if (alreadyShownForThisQuote()) return;
+    const d = diagnostics();
+    if (!detectCancelled()) { log('not cancelled, skip'); return; }
+    if (alreadyShownForThisQuote()) { log('already shown for this quote, skip'); return; }
+    log('show modal');
     showCancellationModal();
   }
 
+  // expose helper for quick test in console
+  window.__cancelModalDiag = diagnostics;
+  window.__cancelModalShow = function(){ sessionStorage.removeItem('cancelModalShown:' + (getQuoteId()||'default')); showCancellationModal(); };
+
   if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', maybeShow); } else { setTimeout(maybeShow, 0); }
 })();
-// === End Cancellation Warning Modal (localized & balanced) ===
+// === End Cancellation Warning Modal (debuggable & overrideable) ===
 
