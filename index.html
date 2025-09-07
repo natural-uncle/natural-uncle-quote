@@ -85,7 +85,7 @@ html, body { overflow-x: hidden; }
       body{ padding-bottom: 70px; }
     }
 
-    /* 手機底部固定工具列（只留產生連結） */
+    /* 手機底部固定工具列（顯示產生連結；取消/同意依邏輯控制） */
     .mobile-bottom-bar{
       position: fixed; left:0; right:0; bottom:0; z-index: 1030;
       background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%); color:#fff;
@@ -114,6 +114,11 @@ html, body { overflow-x: hidden; }
     @keyframes pulseBox{
       0%{ box-shadow: 0 0 0 0 rgba(13,110,253,.25); }
       100%{ box-shadow: 0 0 0 18px rgba(13,110,253,0); }
+    }
+
+    .quote-cancelled-banner{
+      background:#fee; border:1px solid #f99; color:#900;
+      padding:.5rem .75rem; border-radius:8px; margin:.5rem 0 1rem; font-weight:600;
     }
     
 </style>
@@ -249,7 +254,7 @@ html, body { overflow-x: hidden; }
           <p class="small text-muted mb-0">完工當日付款；欲匯款可點擊下方按鈕查看資訊並一鍵複製。</p>
         </div>
         <div class="ms-auto d-none d-md-block">
-          <span class="badge text-bg成功 me-1">現場付款</span>
+          <span class="badge text-bg-success me-1">現場付款</span>
           <span class="badge text-bg-primary">匯款 / 轉帳</span>
         </div>
       </div>
@@ -268,6 +273,7 @@ html, body { overflow-x: hidden; }
               </button>
             </div>
             <div class="col-12 col-md-6 d-grid">
+              <!-- 修改後：手機隱藏、md(≥768px) 以上顯示 -->
               <a class="btn btn-outline-success btn-lg d-none d-md-block" href="https://lin.ee/OHk6Rn7" target="_blank" rel="noopener">
                 透過 LINE 洽詢付款
               </a>
@@ -302,7 +308,7 @@ html, body { overflow-x: hidden; }
     <li>施作前皆會進行基本功能檢測，確認機況正常後再進行清洗保養作業。</li>
     <li>施作如有拍攝照片或影片，可免費提供給您做為紀錄與備存參考。</li>
     <li>本服務享有14天保固期，如有異常使用狀況，請立即回報，我們將安排專人處理（※保固不包含因安裝不良或零件自然老化所導致之問題）。</li>
-    <li>若您有任何疑問或需進一步協助，歡迎直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
+    <li>若您有任何疑問或需進一步協助，歡迎直接點及下方窗口，直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
   </ol>
 
   <!-- 聯絡資訊 -->
@@ -315,7 +321,7 @@ html, body { overflow-x: hidden; }
     </div>
     <div class="col-md-6 col-12 text-center">
       <div class="d-grid gap-2">
-        <a href="https://lin.ee/OHk6Rn7" target="_blank" class="btn btn成功">🟢 LINE 官方帳號</a>
+        <a href="https://lin.ee/OHk6Rn7" target="_blank" class="btn btn-success">🟢 LINE 官方帳號</a>
         <a href="https://www.facebook.com/naturaluncle" target="_blank" class="btn btn-primary">🔵 Facebook 粉絲專頁</a>
       </div>
     </div>
@@ -326,9 +332,10 @@ html, body { overflow-x: hidden; }
     <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
   </div>
 
-  <!-- 唯讀（桌機）同意按鈕：唯讀未封存才顯示 -->
+  <!-- 唯讀（桌機）動作區：同意 + 取消（取消預設隱藏，僅 admin 顯示） -->
   <div id="readonlyActions" class="text-center mt-3 d-none">
     <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
+    <button id="cancelBtnDesktop" class="btn btn-outline-danger ms-2 d-none">取消/作廢</button>
   </div>
 
   <div id="shareLinkBox" class="link-box d-none"></div>
@@ -340,6 +347,7 @@ html, body { overflow-x: hidden; }
   <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
   <div class="d-flex gap-2 flex-grow-1">
     <button class="btn btn-outline-light btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
+    <button class="btn btn-outline-danger btn-sm flex-fill d-none" id="cancelBtnMobile">取消/作廢</button>
     <button class="btn btn-primary btn-sm flex-fill d-none" id="confirmBtnMobile">我同意此報價</button>
   </div>
 </div>
@@ -534,6 +542,65 @@ function applyCancelStatus(resource){
   }
 }
 
+/* ========== 管理者判斷 + 取消鍵顯示/綁定（?admin=1） ========== */
+function isAdmin(){
+  try{
+    const u = new URL(location.href);
+    const q = u.searchParams.get('admin');
+    if (q === '1') return true;
+    const m = (location.hash||'').match(/[?&]admin=(\d)/);
+    return m ? m[1] === '1' : false;
+  }catch(_){ return false; }
+}
+
+if (typeof callCancel !== 'function'){
+  async function callCancel(reason){
+    const m = (location.hash||'').match(/[#&?]cid=([^&]+)/);
+    const id = m ? decodeURIComponent(m[1]) : '';
+    if(!id){ alert('找不到報價單代號（cid）'); return; }
+    const r = await fetch('/.netlify/functions/cancel', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, reason })
+    });
+    const j = await r.json().catch(()=>null);
+    if (j && j.ok){
+      alert('已將此報價單作廢');
+      location.reload();
+    }else{
+      alert('作廢失敗：' + (j?.error || r.statusText || 'Unknown Error'));
+    }
+  }
+}
+
+function setupCancelButtonsVisibility(resource){
+  const isCancelled =
+    (resource?.resource_type === 'raw' && Array.isArray(resource?.tags) && resource.tags.includes('cancelled')) ||
+    (resource?.context?.custom?.status === 'cancelled');
+  const isLocked = !!resource?.locked;
+  const show = isAdmin() && !isCancelled && !isLocked;
+
+  const dBtn = document.getElementById('cancelBtnDesktop');
+  const mBtn = document.getElementById('cancelBtnMobile');
+
+  if (dBtn) dBtn.classList.toggle('d-none', !show);
+  if (mBtn) mBtn.classList.toggle('d-none', !show);
+
+  if (dBtn && !dBtn.dataset.bound){
+    dBtn.addEventListener('click', ()=>{
+      const reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+      callCancel(reason);
+    });
+    dBtn.dataset.bound = '1';
+  }
+  if (mBtn && !mBtn.dataset.bound){
+    mBtn.addEventListener('click', ()=>{
+      const reason = prompt('請輸入取消/作廢原因（可留空）：') || '';
+      callCancel(reason);
+    });
+    mBtn.dataset.bound = '1';
+  }
+}
+
 /* ========== 送出「我同意此報價」（桌機/手機） ========== */
 async function handleConfirmSubmit(clickedBtn){
   if (clickedBtn && clickedBtn.disabled) return;
@@ -672,8 +739,10 @@ function collectShareData(){
       const data = payload?.data || {};
       const locked = !!payload?.locked;
 
-      // ★ 在渲染前就判斷是否作廢
+      // 先判斷作廢（橫幅與隱藏同意）
       applyCancelStatus(payload);
+      // 管理者可見取消鍵（未作廢且未封存）
+      setupCancelButtonsVisibility(payload);
 
       applyReadOnlyData(data); 
       applyMobileLabels();
