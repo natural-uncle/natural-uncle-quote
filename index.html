@@ -871,5 +871,51 @@ document.addEventListener('DOMContentLoaded', function(){
   padding:.5rem .75rem; border-radius:8px; margin:.5rem 0 1rem; font-weight:600;
 }
 </style>
+
+<script>
+(function(){
+  function ready(fn){
+    if (document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
+  }
+  function esc(s){ return String(s||""); }
+  function getCurrentPublicIdFromUrl(){
+    try{
+      const m = (location.hash||"").match(/[#&?]cid=([^&]+)/);
+      let id = m ? decodeURIComponent(m[1]) : "";
+      if (!id) return "";
+      id = id.replace(/[?#].*$/,"").replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i,"");
+      return id;
+    }catch{ return ""; }
+  }
+  async function callCancel(reason){
+    const id = getCurrentPublicIdFromUrl();
+    if(!id){ alert("找不到報價單代號（cid）"); return; }
+    const r = await fetch("/.netlify/functions/cancel", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ id, reason })
+    });
+    const j = await r.json().catch(()=>null);
+    if (j && j.ok){
+      alert("已將此報價單作廢");
+      location.reload();
+    }else{
+      alert("作廢失敗：" + (j?.error || r.statusText || "Unknown Error"));
+    }
+  }
+  function bindCancelButton(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener("click", ()=>{
+      const reason = prompt("請輸入取消/作廢原因（可留空）：") || "";
+      callCancel(reason);
+    });
+  }
+  ready(function(){
+    ["cancelBtn","cancelBtnMobile","cancelBtnDesktop"].forEach(bindCancelButton);
+  });
+})();
+</script>
 </body>
 </html>
