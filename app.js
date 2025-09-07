@@ -15,6 +15,9 @@ function addClass(el, c){ if (el) el.classList.add(c); }
 function removeClass(el, c){ if (el) el.classList.remove(c); }
 function toggle(el, show){ if (el) el.classList.toggle('d-none', !show); }
 
+/* 取消狀態全域旗標 */
+window.__QUOTE_CANCELLED__ = false;
+
 /* =====================
    Header 初始化
 ===================== */
@@ -296,19 +299,29 @@ function collectShareData(){
 }
 
 /* =====================
-   唯讀載入（#cid / ?cid / #data）
+   可見性（考慮取消狀態）
 ===================== */
 function setReadonlyButtonsVisibility(canConfirm){
   const admin = isAdmin();
+  const cancelled = !!window.__QUOTE_CANCELLED__;
+  const effectiveConfirm = canConfirm && !cancelled;
+
   const shareDesk = qs("#shareLinkBtn"); if (shareDesk) shareDesk.style.display = "none";
   const shareM   = qs("#shareLinkBtnMobile"); if (shareM) shareM.style.display = "none";
-  const ro       = qs("#readonlyActions");
-  if (ro) ro.classList.toggle("d-none", !(canConfirm || admin));
+
+  const ro = qs("#readonlyActions");
+  if (ro) ro.classList.toggle("d-none", !(effectiveConfirm || admin));
+
+  // 確認按鈕永遠不在 cancelled 顯示
   const mConfirm = qs("#confirmBtnMobile");
-  if (mConfirm) mConfirm.classList.toggle("d-none", !canConfirm);
   const dConfirm = qs("#confirmBtnDesktop");
-  if (dConfirm && canConfirm){ dConfirm.style.display = ""; }
+  if (mConfirm) mConfirm.classList.toggle("d-none", !effectiveConfirm);
+  if (dConfirm) dConfirm.classList.toggle("d-none", !effectiveConfirm);
 }
+
+/* =====================
+   套用唯讀資料
+===================== */
 function applyReadOnlyData(data){
   if(data.quoteInfo){
     const qi = qs("#quoteInfo");
@@ -357,15 +370,18 @@ function applyReadOnlyData(data){
   ["addRow","shareLinkBtn","shareLinkBtnMobile"].forEach(id=>{ const el = qs("#"+id); if(el) el.style.display="none"; });
   updateTotals();
 }
-function forceReadOnlyBlank(){
-  qsa("input, textarea, select").forEach(el=>{
-    if (el.tagName === "SELECT") el.setAttribute("disabled", true);
-    else el.setAttribute("readonly", true);
-  });
-  ["addRow","shareLinkBtn","shareLinkBtnMobile","confirmBtnDesktop","readonlyActions"].forEach(id=>{ const el = qs("#"+id); if(el) el.style.display="none"; });
+
+/* =====================
+   取消狀態（含 payload.resource）
+===================== */
+function extractResource(p){
+  if (!p) return null;
+  if (p.resource) return p.resource;
+  return p;
 }
-function applyCancelStatus(resource){
+function applyCancelStatus(payload){
   try{
+    const resource = extractResource(payload);
     let cancelled = false;
     if (resource?.resource_type === "raw") {
       const tags = resource?.tags || [];
@@ -374,6 +390,8 @@ function applyCancelStatus(resource){
       const status = resource?.context?.custom?.status;
       if (status === "cancelled") cancelled = true;
     }
+    window.__QUOTE_CANCELLED__ = cancelled;
+
     if (cancelled) {
       const banner = qs("#cancelBanner");
       if (banner) {
@@ -382,19 +400,26 @@ function applyCancelStatus(resource){
         const time = resource?.context?.custom?.cancel_time || "";
         banner.textContent = `⚠️ 本報價單已作廢${time ? `（${new Date(time).toLocaleString()}）` : ""}${reason ? `，原因：${reason}` : ""}`;
       }
-      qs("#confirmBtnDesktop")?.classList.add("d-none");
-      qs("#confirmBtnMobile")?.classList.add("d-none");
-      qs("#readonlyActions")?.classList.add("d-none");
+      // 無論是否 admin，都隱藏「我同意」
+      addClass(qs("#confirmBtnDesktop"), "d-none");
+      addClass(qs("#confirmBtnMobile"), "d-none");
     }
   }catch(e){ console.warn("applyCancelStatus error:", e); }
 }
-function setupCancelButtonsVisibility(resource){
+
+/* =====================
+   顯示/綁定取消按鈕（admin）
+===================== */
+function setupCancelButtonsVisibility(payload){
+  const resource = extractResource(payload);
   const isCancelled =
     (resource?.resource_type === 'raw' && Array.isArray(resource?.tags) && resource.tags.includes('cancelled')) ||
     (resource?.context?.custom?.status === 'cancelled');
   const show = isAdmin() && !isCancelled;
+
   toggle(qs('#cancelBtnDesktop'), show);
   toggle(qs('#cancelBtnMobile'), show);
+
   if (show){
     if (!qs('#cancelBtnDesktop')?.dataset.bound){
       qs('#cancelBtnDesktop')?.addEventListener('click', ()=>{
@@ -442,16 +467,26 @@ document.addEventListener('click', function(e){
 });
 
 /* =====================
+   初始：若 admin，預先顯示取消鈕與唯讀動作區（避免晚一步載入）
+===================== */
+document.addEventListener('DOMContentLoaded', function(){
+  if (isAdmin()){
+    removeClass(qs('#readonlyActions'), 'd-none');
+    removeClass(qs('#cancelBtnDesktop'), 'd-none');
+    removeClass(qs('#cancelBtnMobile'), 'd-none');
+  }
+});
+
+/* =====================
    載入（view）
 ===================== */
 (async function loadReadOnlyIfHash(){
-  const hash = location.hash || "";
   const cidQ = getCid();
 
   if (cidQ) {
     if (isLocallyLocked("locked:cid:"+cidQ)) { 
-      qs("#confirmBtnDesktop")?.classList.add("d-none");
-      qs("#confirmBtnMobile")?.classList.add("d-none");
+      addClass(qs("#confirmBtnDesktop"), "d-none");
+      addClass(qs("#confirmBtnMobile"), "d-none");
     }
     try{
       const r = await fetch(`/.netlify/functions/view?id=${encodeURIComponent(cidQ)}&ts=${Date.now()}`, { cache:"no-store" });
@@ -459,49 +494,43 @@ document.addEventListener('click', function(e){
       const payload = await r.json();
       const data = payload?.data || {};
       const locked = !!payload?.locked;
+
       applyCancelStatus(payload);
       setupCancelButtonsVisibility(payload);
       applyReadOnlyData(data); 
       applyMobileLabels();
       setReadonlyButtonsVisibility(!locked);
+
       if (locked){
-        const box = qs("#cancelBanner");
-        if (!box || box.classList.contains("d-none")) {
-          const notice = document.createElement('div');
-          notice.className = 'alert alert-success mt-2';
-          notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
-          qs('.container-quote').prepend(notice);
-        }
-        qs("#confirmBtnDesktop")?.classList.add("d-none");
-        qs("#confirmBtnMobile")?.classList.add("d-none");
-        if (!isAdmin()) {
-          qs("#readonlyActions")?.classList.add("d-none");
-        }
+        const notice = document.createElement('div');
+        notice.className = 'alert alert-success mt-2';
+        notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
+        qs('.container-quote').prepend(notice);
+        addClass(qs("#confirmBtnDesktop"), "d-none");
+        addClass(qs("#confirmBtnMobile"), "d-none");
+        if (!isAdmin()) addClass(qs("#readonlyActions"), "d-none");
       }
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
       alert("此連結已失效或資料讀取失敗。");
       forceReadOnlyBlank();
-      qs("#confirmBtnDesktop")?.classList.add("d-none");
-      qs("#confirmBtnMobile")?.classList.add("d-none");
-      if (!isAdmin()) {
-        qs("#readonlyActions")?.classList.add("d-none");
-      }
+      addClass(qs("#confirmBtnDesktop"), "d-none");
+      addClass(qs("#confirmBtnMobile"), "d-none");
+      if (!isAdmin()) addClass(qs("#readonlyActions"), "d-none");
       return;
     }
   }
 
+  const hash = location.hash || "";
   if (hash.startsWith("#data=")) {
     try{
       const data = JSON.parse(decodeURIComponent(hash.replace("#data=","")));
       applyReadOnlyData(data); applyMobileLabels();
       if (isLocallyLocked("locked:data:"+hash)) { 
-        qs("#confirmBtnDesktop")?.classList.add("d-none");
-        qs("#confirmBtnMobile")?.classList.add("d-none");
-        if (!isAdmin()){
-          qs("#readonlyActions")?.classList.add("d-none");
-        }
+        addClass(qs("#confirmBtnDesktop"), "d-none");
+        addClass(qs("#confirmBtnMobile"), "d-none");
+        if (!isAdmin()) addClass(qs("#readonlyActions"), "d-none");
         const notice = document.createElement('div');
         notice.className = 'alert alert-success mt-2';
         notice.innerHTML = '此報價單已<span class="fw-bold">完成確認並封存</span>，僅供查看。';
@@ -517,6 +546,6 @@ document.addEventListener('click', function(e){
     }
   }
 
-  // 無 hash：編輯模式
+  // 無 cid：編輯模式
   updateTotals(); applyMobileLabels();
 })();
