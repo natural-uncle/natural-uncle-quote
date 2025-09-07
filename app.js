@@ -41,6 +41,24 @@ function toggle(el, show){ if (el) el.classList.toggle('d-none', !show); }
 // ========== Mobile bottom bar visibility helper（ChatGPT Patch） ==========
 function setMobileBottomBar(show){
   const bar = document.querySelector('.mobile-bottom-bar');
+  // === Injected: strengthen cancelled UI trigger ===
+  try {
+    const __cancelledStrong =
+      isCancelled ||
+      (Array.isArray(res.tags) && (res.tags.includes('CANCELLED') || res.tags.includes('CANCELED') || res.tags.includes('CANCEL'))) ||
+      (typeof ctx.status === 'string' && /cancel+ed?/i.test(ctx.status)) ||
+      (ctx.cancelled === true || ctx.isCancelled === true);
+
+    if (__cancelledStrong) {
+      const cancelInfo = (res && res.cancelInfo) || (ctx && ctx.cancelInfo) || {};
+      const reason = cancelInfo.reason || (ctx && ctx.reason) || '';
+      const timeText = cancelInfo.timeText || (ctx && ctx.cancelledAt) || '';
+      showCancelledUI(reason, timeText);
+      alertCancelledOnce();
+    }
+  } catch(__){ /* ignore */ }
+  // === End Injected ===
+
   if (!bar) return;
   // 以行為為主：show=false → 移除；show=true → 顯示（仍受 CSS @media 控制）
   bar.style.display = show ? '' : 'none';
