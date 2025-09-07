@@ -351,7 +351,11 @@ function applyReadOnlyData(data){
     const m = s.match(/^(\d{4}\/\d{2}\/\d{2}（[^）]+）)\s*(上午|下午)?\s*([0-2]\d:[0-5]\d)/);
     if (m) {
       const datePart = m[1];
-      const timePart = `${m[2] ? m[2] + ' ' : ''}${m[3]} 開始`;
+      let [hour, minute] = m[3].split(":").map(Number);
+    let displayHour = hour % 12 || 12;
+    let displayTime = `${displayHour}:${String(minute).padStart(2, "0")}`;
+
+    const timePart = `${m[2] ? m[2] + ' ' : ''}${displayTime} 開始`;
       cf.innerHTML = `<span class="cf-date">${datePart}</span><span class="cf-time">${timePart}</span>`;
     } else {
       cf.textContent = s;
