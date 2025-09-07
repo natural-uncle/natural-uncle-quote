@@ -116,7 +116,79 @@ html, body { overflow-x: hidden; }
       100%{ box-shadow: 0 0 0 18px rgba(13,110,253,0); }
     }
     
+
+/* 强化提示橫幅視覺 */
+.alert-strong {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  border: 3px solid #000;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  padding: 1rem 1.2rem;
+}
+.alert-strong.alert-danger { background-color: #ff4d4f; color: #fff; }
+.alert-strong.alert-success { background-color: #28a745; color: #fff; }
+/* ====== Status Banner (sticky) & Watermark (mobile/desktop/print) ====== */
+.status-banner{
+  position: sticky; top: 0; z-index: 1040;
+  padding: .85rem 1rem; border: 0; border-radius: 0;
+  font-weight: 800; letter-spacing: .5px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,.15);
+}
+.status-banner .title{ font-size: 1.05rem; }
+.status-banner .sub{ font-size: .95rem; opacity: .95; }
+.status-cancelled{
+  background: linear-gradient(90deg,#ffdde1,#ee9ca7);
+  color:#7a0614;
+}
+.status-archived{
+  background: linear-gradient(90deg,#e0eafc,#cfdef3);
+  color:#0b3669;
+}
+/* Watermark */
+.watermark{
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; user-select: none;
+  z-index: 1030; opacity: .12;
+  transform: rotate(-20deg);
+  font-weight: 900; text-transform: uppercase;
+  mix-blend-mode: multiply;
+}
+.watermark .wm-text{
+  font-size: 16vw; /* responsive */
+  line-height: 1; white-space: nowrap;
+}
+.wm-cancelled{ color: #c2185b; }
+.wm-archived{ color: #1e88e5; }
+@media (min-width: 992px){ .watermark .wm-text{ font-size: 12vw; } }
+@media print{
+  .watermark{ opacity: .18; }
+  .mobile-bottom-bar{ display: none !important; }
+  .status-banner{ position: static; }
+}
 </style>
+
+  <style>
+    .alert-strong {
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      border: 3px solid #000;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      padding: 1rem 1.2rem;
+    }
+    .alert-strong.alert-danger {
+      background-color: #ff4d4f;
+      color: #fff;
+    }
+    .alert-strong.alert-success {
+      background-color: #28a745;
+      color: #fff;
+    }
+  </style>
+
 </head>
 <body>
 <div class="container-quote">
@@ -128,7 +200,7 @@ html, body { overflow-x: hidden; }
   <div id="quoteInfo" class="quote-info"></div>
 
   <!-- 作廢橫幅 -->
-  <div id="cancelBanner" class="alert alert-danger d-none" role="alert"></div>
+  <div id="cancelBanner" class="alert alert-danger d-none alert-strong alert-strong" role="alert"></div>
 
   <!-- 客戶資訊 -->
   <h5 class="section-title">客戶資訊</h5>
