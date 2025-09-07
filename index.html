@@ -117,8 +117,44 @@ html, body { overflow-x: hidden; }
     }
     
 </style>
+
+<style>
+  /* 已作廢視覺加強 */
+  #cancelBanner {
+    position: relative;
+    margin: 12px 0 16px;
+    padding: 14px 18px;
+    border-radius: .75rem;
+    background: #fde7e9;
+    border: 1px solid #f3b6bc;
+    color: #b3202a;
+    font-weight: 700;
+    text-align: center;
+  }
+  /* 浮水印：全域狀態 */
+  .cancelled-watermark {
+    position: relative;
+  }
+  .cancelled-watermark::after {
+    content: "已作廢";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    font-size: clamp(64px, 12vw, 140px);
+    color: rgba(179, 32, 42, 0.12);
+    font-weight: 800;
+    letter-spacing: .2em;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
+  }
+</style>
+
 </head>
 <body>
+<div id="cancelBanner" class="d-none">⚠️ 本報價單已作廢</div>
+
 <div class="container-quote">
 
   <div class="text-center">
