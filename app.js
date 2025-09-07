@@ -627,3 +627,74 @@ async function callCancel(reason) {
   }
 }
 // ========== End Patch ==========
+
+// === Cancellation Warning Modal ===
+(function(){
+  function getCancelReason(){
+    try {
+      if (window.quote && (window.quote.cancel_reason || window.quote.reason)) {
+        return String(window.quote.cancel_reason || window.quote.reason);
+      }
+    } catch(e){}
+    if (window.QUOTE_REASON) return String(window.QUOTE_REASON);
+    const meta = document.querySelector('meta[name="quote:reason"]');
+    if (meta && meta.content) return meta.content;
+    return null;
+  }
+
+  function detectCancelled(){
+    try {
+      if (window.QUOTE_STATUS && String(window.QUOTE_STATUS).toLowerCase() === 'cancelled') return true;
+      if (window.quote && (
+        window.quote.cancelled || window.quote.canceled ||
+        window.quote.is_cancelled || String(window.quote.status).toLowerCase() === 'cancelled'
+      )) return true;
+    } catch(e) {}
+    const bodyFlag = document.body && (document.body.dataset.cancelled === 'true' || document.body.dataset.canceled === 'true');
+    if (bodyFlag) return true;
+    const meta = document.querySelector('meta[name="quote:status"]');
+    if (meta && meta.content && meta.content.toLowerCase() === 'cancelled') return true;
+    const banner = document.getElementById('cancelBanner') || document.querySelector('.cancelled-banner, .is-cancelled, .alert-cancelled');
+    if (banner) return true;
+    return false;
+  }
+
+  function showCancellationModal(){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'cancel-modal-backdrop';
+    const reason = getCancelReason();
+
+    backdrop.innerHTML = `
+      <div class="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+        <header><span id="cancel-modal-title">⚠️ 注意</span><span class="badge">已作廢</span></header>
+        <div class="body">本報價單已作廢，僅供查看用途。請勿再分享、修改或入帳使用。${reason ? ('<br><br><strong>原因：</strong>' + reason) : ''}</div>
+        <div class="actions">
+          <button class="btn" id="cancel-modal-more">查看說明</button>
+          <button class="btn primary" id="cancel-modal-ok">我知道了</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(backdrop);
+
+    function close(){ if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop); }
+
+    document.getElementById('cancel-modal-ok').addEventListener('click', close);
+    document.getElementById('cancel-modal-more').addEventListener('click', function(){
+      alert("此報價單已作廢。如需恢復或查詢詳細資訊，請聯繫管理員。");
+    });
+    backdrop.addEventListener('click', function(e){ if (e.target === backdrop) close(); });
+  }
+
+  function maybeShow(){
+    if (detectCancelled()) {
+      showCancellationModal();
+    }
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', maybeShow);
+  } else {
+    setTimeout(maybeShow, 0);
+  }
+})();
+// === End Cancellation Warning Modal ===
