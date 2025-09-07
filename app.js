@@ -551,3 +551,52 @@ document.addEventListener('DOMContentLoaded', function(){
   // 無 cid：編輯模式
   updateTotals(); applyMobileLabels();
 })();
+
+
+// ========== 補上取消動作（ChatGPT Patch） ==========
+async function callCancel(reason) {
+  const id = getCid();
+  if (!id) {
+    alert("找不到報價單 ID，無法作廢。");
+    return;
+  }
+  const dBtn = qs('#cancelBtnDesktop');
+  const mBtn = qs('#cancelBtnMobile');
+  const origD = dBtn ? dBtn.textContent : "";
+  const origM = mBtn ? mBtn.textContent : "";
+  [dBtn, mBtn].forEach(b => { if (b) { b.disabled = true; b.textContent = "作廢中…"; } });
+
+  try {
+    const res = await fetch("/api/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, reason: reason || "" })
+    });
+    let data = null;
+    try { data = await res.json(); } catch(_) {}
+    if (!res.ok) {
+      const msg = (data && data.error) ? data.error : ("HTTP " + res.status);
+      throw new Error(msg);
+    }
+
+    const banner = qs('#cancelBanner');
+    if (banner) {
+      const when = (data && (data.cancelledAt || data.updatedAt)) || Date.now();
+      const timeStr = new Date(when).toLocaleString();
+      banner.classList.remove('d-none');
+      banner.textContent = `⚠️ 本報價單已作廢（${timeStr}）${reason ? `，原因：${reason}` : ""}`;
+    }
+    window.__QUOTE_CANCELLED__ = true;
+    if (dBtn) dBtn.classList.add('d-none');
+    if (mBtn) mBtn.classList.add('d-none');
+    alert("已作廢。");
+  } catch (err) {
+    console.error("取消/作廢失敗：", err);
+    alert("作廢失敗：" + (err.message || err));
+    if (dBtn) dBtn.textContent = origD;
+    if (mBtn) mBtn.textContent = origM;
+    [dBtn, mBtn].forEach(b => { if (b) b.disabled = false; });
+    return;
+  }
+}
+// ========== End Patch ==========
