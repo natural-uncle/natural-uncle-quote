@@ -555,6 +555,7 @@ document.addEventListener('DOMContentLoaded', function(){
       const payload = await r.json();
       const data = payload?.data || {};
       const locked = !!payload?.locked;
+      window.QUOTE_LOCKED = locked;
 
       applyCancelStatus(payload);
       setupCancelButtonsVisibility(payload);
@@ -579,7 +580,10 @@ applyReadOnlyData(data);
         addClass(qs("#confirmBtnDesktop"), "d-none");
         addClass(qs("#confirmBtnMobile"), "d-none");
         if (!isAdmin()) addClass(qs("#readonlyActions"), "d-none");
-      }
+        window.QUOTE_STATUS = (window.__QUOTE_CANCELLED__ ? 'cancelled' : 'confirmed');
+        window.QUOTE_CONFIRMED = !window.__QUOTE_CANCELLED__;
+        if (!window.__QUOTE_CANCELLED__ && typeof window.__confirmModalShow === 'function') window.__confirmModalShow(window.QUOTE_REASON || '');
+    }
       return;
     }catch(e){
       console.error("讀取分享資料失敗：", e);
@@ -820,3 +824,41 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 // === End Cancellation Warning Modal (debuggable & overrideable) ===
 
+// === Confirmed Modal (archived/locked) ===
+(function(){
+  if (typeof window.__confirmModalShow === 'function') return; // guard
+
+  function getQuoteId(){
+    try { if (window.quote && (window.quote.id||window.quote.qid||window.quote.uuid)) return String(window.quote.id||window.quote.qid||window.quote.uuid); } catch(e){}
+    const meta = document.querySelector('meta[name="quote:id"]'); if (meta && meta.content) return meta.content;
+    try { const u = new URL(window.location.href); return u.searchParams.get('qid')||u.searchParams.get('quote_id')||u.searchParams.get('id'); } catch(e){}
+    return null;
+  }
+  function oncePerQuote(){
+    const id = getQuoteId() || 'default';
+    const key = 'confirmModalShown:' + id;
+    if (sessionStorage.getItem(key)) return true;
+    sessionStorage.setItem(key, '1'); return false;
+  }
+
+  window.__confirmModalShow = function(reasonText){
+    if (oncePerQuote()) return;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'confirm-modal-backdrop';
+    const msg = reasonText ? `<br><br><strong>備註：</strong>${reasonText}` : '';
+    backdrop.innerHTML = [
+      '<div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">',
+        '<header><span id="confirm-modal-title">✅ 已確認</span><span class="badge">已封存</span></header>',
+        `<div class="body">此報價單已完成確認並封存，僅供查看。${msg}</div>`,
+        '<div class="actions">',
+          '<button class="btn primary" id="confirm-modal-ok">我知道了</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(backdrop);
+    function close(){ if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop); }
+    document.getElementById('confirm-modal-ok').addEventListener('click', close);
+    backdrop.addEventListener('click', function(e){ if (e.target === backdrop) close(); });
+  };
+})();
+// === End Confirmed Modal ===
