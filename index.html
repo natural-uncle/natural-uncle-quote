@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>自然大叔 線上報價單</title>
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+/* 讓完整預約時間在手機自動斷成兩行：日期一行、時間一行 */
+#cleanFull .cf-date,
+#cleanFull .cf-time { display: inline; }
+@media (max-width: 576px){
+  #cleanFull .cf-date,
+  #cleanFull .cf-time { display: block; line-height: 1.25; }
+}
+/* mobile-confirm styles */
+.mobile-bottom-bar{
+  position: sticky; bottom: 0; left: 0; right: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.mobile-bottom-bar .total-strong{ font-weight: 800; }
+#confirmBtnMobile{ min-width: 7em; }
+
+html, body { overflow-x: hidden; }
+
+    body { font-family: "Microsoft JhengHei", sans-serif; background:#eaeaea; }
+    .container-quote {
+      max-width: 800px; margin: 10px auto; background:#f9fcff;
+      padding: 20px; border:1px solid #ddd; box-shadow:0 0 10px rgba(0,0,0,.1);
+      position: relative; overflow: hidden;
+    }
+    .container-quote::before{
+      content:""; position:absolute; inset:0;
+      background-image:url('https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png'); background-repeat:repeat; background-size:800px;
+      transform:rotate(-45deg); opacity:.02; z-index:0;
+    }
+    .container-quote > * { position:relative; z-index:1; }
+    .logo { width:100%; max-height:150px; object-fit:contain; display:block; margin:0 auto 10px; }
+
+    .quote-info { text-align:center; font-weight:700; color:#333; margin-bottom:14px; }
+    .quote-info .qi-proj, .quote-info .qi-date, .quote-info .qi-sep { display:inline; }
+    @media (max-width:576px){
+      .quote-info .qi-proj, .quote-info .qi-date { display:block; }
+      .quote-info .qi-sep { display:none; }
+    }
+
+    .section-title { margin-top:15px; font-weight:700; border-bottom:2px solid #444; padding-bottom:4px; }
+    #cleanFullBox{
+      font-size:1.4rem; font-weight:700; color:#fff; background:#0d6efd;
+      border:2px solid #0a58ca; border-radius:8px; text-align:center; margin-top:10px;
+    }
+
+    .discount-note{ font-size:.75rem; color:green; display:block; }
+    .link-box{ background:#eef6ff; border-radius:6px; padding:10px; margin-top:12px; word-wrap:break-word; }
+    .link-box .input-group input { font-size:.95rem; }
+
+    .footer-bar{ background:#dbe9f6; padding:12px; text-align:center; margin-top:20px; border-top:2px solid #bbb; }
+
+    /* 行動：表格→卡片 */
+    @media (max-width: 576px){
+      #quoteTable thead { display: none; }
+      #quoteTable, #quoteTable tbody, #quoteTable tr, #quoteTable td { display: block; width: 100%; }
+      #quoteTable tbody tr{
+        background:#fff; border:1px solid #ddd; border-radius:12px;
+        padding:10px; margin:10px 0; box-shadow:0 2px 8px rgba(0,0,0,.05);
+        display: grid; grid-template-columns: 1fr 1fr;
+        grid-template-areas: "svc svc" "opt opt" "qty price" "sub ops";
+        gap: 8px 12px;
+      }
+      #quoteTable td:nth-child(1){ grid-area: svc; }
+      #quoteTable td:nth-child(2){ grid-area: opt; }
+      #quoteTable td:nth-child(3){ grid-area: qty; }
+      #quoteTable td:nth-child(4){ grid-area: price; }
+      #quoteTable td:nth-child(5){ grid-area: sub; }
+      #quoteTable td:nth-child(6){ grid-area: ops; }
+      #quoteTable td{ border:0 !important; padding:0; }
+      #quoteTable td::before{ content: attr(data-label); display:block; font-weight:700; color:#555; margin-bottom:4px; }
+      #quoteTable td:nth-child(5) .subtotal{
+        display:inline-block; font-size:1.1rem; font-weight:800; color:#d63384;
+        padding:4px 8px; background:#fff0f6; border:1px solid #f3c2db; border-radius:8px;
+      }
+      #quoteTable td:nth-child(6) .btn{ width:100%; }
+      body{ padding-bottom: 70px; }
+    }
+
+    /* 手機底部固定工具列（只留產生連結） */
+    .mobile-bottom-bar{
+      position: fixed; left:0; right:0; bottom:0; z-index: 1030;
+      background: linear-gradient(180deg, #0d6efd 0%, #0b5ed7 100%); color:#fff;
+      box-shadow: 0 -6px 20px rgba(13,110,253,.35);
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+      display:none; align-items:center; justify-content:space-between; gap: 10px;
+    }
+    @media (max-width: 768px){ .mobile-bottom-bar{ display:flex; } }
+    .mobile-bottom-bar .total-strong{ font-weight: 900; font-size: 1.05rem; }
+    .mobile-bottom-bar .btn{ margin-bottom:0; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .mobile-bottom-bar .btn-outline-light{ border-color:#fff; color:#fff; }
+
+    .total-banner{
+      background: #fff7e6; border:1px solid #ffd8a8; color:#d9480f;
+      border-radius:12px; padding:10px 14px; display:inline-block; font-weight:900;
+      box-shadow: 0 2px 8px rgba(255,173,77,.15);
+    }
+    .total-banner #total{ font-size:1.4rem; }
+  
+    /* --- Payment highlight styles --- */
+    .payment-highlight{
+      background: linear-gradient(135deg, rgba(13,110,253,.08), rgba(25,135,84,.08));
+      border: 1px dashed rgba(0,0,0,.12);
+    }
+    #bankBox.pulse{ animation: pulseBox 1.2s ease-out 1; }
+    @keyframes pulseBox{
+      0%{ box-shadow: 0 0 0 0 rgba(13,110,253,.25); }
+      100%{ box-shadow: 0 0 0 18px rgba(13,110,253,0); }
+    }
+    
+</style>
+</head>
+<body>
+<div class="container-quote">
+
+  <div class="text-center">
+    <img src="https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png" alt="自然大叔 Logo" class="logo" />
+  </div>
+
+  <div id="quoteInfo" class="quote-info"></div>
+
+  <!-- 作廢橫幅 -->
+  <div id="cancelBanner" class="alert alert-danger d-none" role="alert"></div>
+
+  <!-- 客戶資訊 -->
+  <h5 class="section-title">客戶資訊</h5>
+  <div class="row g-2 mb-3">
+    <div class="col-md-6 col-12">
+      <label>姓名</label>
+      <input id="customerName" type="text" class="form-control" placeholder="客戶姓名" />
+    </div>
+    <div class="col-md-6 col-12">
+      <label>電話</label>
+      <input id="customerPhone" type="text" class="form-control" />
+    </div>
+  </div>
+  <div class="row g-2 mb-3">
+    <div class="col-12">
+      <label>地址</label>
+      <input id="customerAddress" type="text" class="form-control" placeholder="服務地址" />
+    </div>
+  </div>
+
+  <!-- 技師資訊 -->
+  <h5 class="section-title">技師人員資訊</h5>
+  <div class="row g-2 mb-3">
+    <div class="col-md-6 col-12">
+      <label>技師姓名</label>
+      <input id="technicianName" type="text" class="form-control" value="林宥騰" />
+    </div>
+    <div class="col-md-6 col-12">
+      <label>技師聯絡電話</label>
+      <input id="technicianPhone" type="text" class="form-control" value="0912-356331" />
+    </div>
+  </div>
+
+  <!-- 預約時間 -->
+  <h5 class="section-title">預約清洗時間</h5>
+  <div id="cleanFullBox" class="p-3">
+    🕒 完整預約時間：<span id="cleanFull">尚未選擇</span>
+    <div class="row g-2 mt-2">
+      <div class="col-6"><input id="cleanDate" type="date" class="form-control" /></div>
+      <div class="col-6"><input id="cleanTime" type="time" class="form-control" /></div>
+    </div>
+  </div>
+
+  <!-- 服務項目 -->
+  <h5 class="section-title">服務項目</h5>
+  <div class="table-responsive">
+    <table id="quoteTable" class="table table-bordered bg-white">
+      <thead class="table-light">
+        <tr>
+          <th>項目名稱</th>
+          <th>補充說明</th>
+          <th>數量</th>
+          <th>單價</th>
+          <th>小計</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <select class="form-select service">
+              <option value="">請選擇</option>
+              <option value="冷氣清洗">冷氣清洗</option>
+              <option value="洗衣機清洗">洗衣機清洗</option>
+              <option value="防霉處理">防霉處理</option>
+              <option value="臭氧殺菌">臭氧殺菌</option>
+              <option value="變形金剛機型">變形金剛機型</option>
+              <option value="一體式水盤機型">一體式水盤機型</option>
+              <option value="超長費用">超長費用</option>
+              <option value="自來水管清洗">自來水管清洗</option>
+              <option value="水塔清洗">水塔清洗</option>
+            </select>
+          </td>
+          <td>
+            <select class="form-select option">
+              <option value="">請選擇</option>
+              <option>分離式（壁掛式）</option>
+              <option>吊隱式（隱藏式）</option>
+              <option>直立式</option>
+              <option>家用</option>
+              <option>特殊機型額外加收費</option>
+              <option>冷氣防霉處理（抑菌噴劑）</option>
+              <option>高臭氧殺菌30分鐘</option>
+              <option>加購價</option>
+              <option>無廚一衛</option>
+              <option>一廚一衛</option>
+              <option>一廚兩衛</option>
+              <option>一廚三衛</option>
+              <option>一廚四衛</option>
+            </select>
+          </td>
+          <td><input type="number" class="form-control qty" value="1" min="1" /></td>
+          <td>
+            <input type="number" class="form-control price" value="0" />
+            <small class="discount-note"></small>
+          </td>
+          <td class="subtotal">0</td>
+          <td><button class="btn btn-danger btn-sm removeRow">刪除</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <button id="addRow" class="btn btn-primary mb-2">➕ 新增項目</button>
+
+  <!-- 其他事項 -->
+  <h5 class="section-title">其他事項</h5>
+  <textarea id="otherNotes" class="form-control" rows="3">最終費用將依現場實際狀況進行調整，如有額外項目，將事前與您說明與報價。</textarea>
+
+  <!-- 合計 -->
+  <h5 class="mt-3 total-banner">合計：<span id="total">0</span> 元</h5>
+  
+    <!-- Payment Methods (Enhanced) -->
+    <section id="payment" class="mt-3">
+      <div class="payment-highlight d-flex align-items-center gap-2 p-3 mb-2 rounded-3">
+        <div class="flex-shrink-0" style="font-size:2rem">💳</div>
+        <div>
+          <h2 class="m-0 fw-bold">付款方式</h2>
+          <p class="small text-muted mb-0">完工當日付款；欲匯款可點擊下方按鈕查看資訊並一鍵複製。</p>
+        </div>
+        <div class="ms-auto d-none d-md-block">
+          <span class="badge text-bg-success me-1">現場付款</span>
+          <span class="badge text-bg-primary">匯款 / 轉帳</span>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="card-body">
+          <ul class="mb-3">
+            <li><strong>付款條件：</strong>完工後現場付款或匯款</li>
+            <li><strong>付款期限：</strong><span class="badge rounded-pill text-bg-warning align-middle">當日付款完成</span></li>
+          </ul>
+
+          <div class="row gy-2">
+            <div class="col-12 col-md-6 d-grid">
+              <button class="btn btn-primary btn-lg" id="toggleAccountBtn" type="button">
+                查看匯款資訊
+              </button>
+            </div>
+            <div class="col-12 col-md-6 d-grid">
+              <a class="btn btn-outline-success btn-lg d-none d-md-block" href="https://lin.ee/OHk6Rn7" target="_blank" rel="noopener">
+                透過 LINE 洽詢付款
+              </a>
+            </div>
+          </div>
+
+          <div id="bankBox" class="link-box mt-3 d-none">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-bold">匯款帳號（可複製）</div>
+              <div class="d-none d-md-flex align-items-center gap-2 opacity-75 small">
+                <span>ATM</span> · <span>網銀</span> · <span>行動銀行</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <input type="text" class="form-control form-control-lg" id="bankAccount"
+                     value="銀行：台新銀行（812）　帳號：28881000063784　戶名：林宥騰"
+                     readonly>
+              <button class="btn btn-primary" id="copyAccountBtn" type="button">📋 複製帳號</button>
+            </div>
+            <small class="text-muted d-block mt-2">如需統編或三聯式發票，請於匯款備註填寫並另行告知。</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <!-- 備註與保固條款 -->
+  <h5 class="section-title">備註與保固條款</h5>
+  <ol>
+    <li>請於確認本報價內容無誤後，以按下「我同意此報價」按鈕回覆，以利後續安排作業。</li>
+    <li>施作過程歡迎您全程在場參與，確保施工過程透明、保障雙方權益。</li>
+    <li>施作前皆會進行基本功能檢測，確認機況正常後再進行清洗保養作業。</li>
+    <li>施作如有拍攝照片或影片，可免費提供給您做為紀錄與備存參考。</li>
+    <li>本服務享有14天保固期，如有異常使用狀況，請立即回報，我們將安排專人處理（※保固不包含因安裝不良或零件自然老化所導致之問題）。</li>
+    <li>若您有任何疑問或需進一步協助，歡迎直接加入 LINE 官方帳號，我們將誠摯為您服務。</li>
+  </ol>
+
+  <!-- 聯絡資訊 -->
+  <h5 class="section-title">聯絡資訊</h5>
+  <div class="row align-items-start">
+    <div class="col-md-6 col-12 mb-2">
+      <p><b>自然大叔 / 林宥騰</b><br/>
+      電話：0912-356331<br/>
+      Email：natural.uncle@gmail.com</p>
+    </div>
+    <div class="col-md-6 col-12 text-center">
+      <div class="d-grid gap-2">
+        <a href="https://lin.ee/OHk6Rn7" target="_blank" class="btn btn-success">🟢 LINE 官方帳號</a>
+        <a href="https://www.facebook.com/naturaluncle" target="_blank" class="btn btn-primary">🔵 Facebook 粉絲專頁</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 編輯模式：桌機可產生連結 -->
+  <div class="mt-3 text-center">
+    <button id="shareLinkBtn" class="btn btn-secondary">🔗 產生報價單連結</button>
+  </div>
+
+  <!-- 唯讀（桌機）同意按鈕：唯讀未封存才顯示；取消/作廢由 admin 顯示 -->
+  <div id="readonlyActions" class="text-center mt-3 d-none">
+    <button id="confirmBtnDesktop" class="btn btn-outline-primary">✅ 我同意此報價</button>
+    <button id="cancelBtnDesktop" class="btn btn-outline-danger ms-2 d-none">取消/作廢</button>
+  </div>
+
+  <div id="shareLinkBox" class="link-box d-none"></div>
+
+</div>
+
+<!-- 手機底部固定工具列：只保留「產生連結」 -->
+<div class="mobile-bottom-bar d-md-none">
+  <div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
+  <div class="d-flex gap-2 flex-grow-1">
+    <button class="btn btn-outline-light btn-sm flex-fill" id="shareLinkBtnMobile">產生連結</button>
+    <button class="btn btn-outline-danger btn-sm flex-fill d-none" id="cancelBtnMobile">取消/作廢</button>
+    <button class="btn btn-primary btn-sm flex-fill d-none" id="confirmBtnMobile">我同意此報價</button>
+  </div>
+</div>
+
+<div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
+
+<!-- 外部 JS：避免 CSP 擋下 inline -->
+<script src="app.js" defer></script>
+
+</body>
+</html>
