@@ -1,3 +1,26 @@
+
+/* ===== UI helpers for cancelled state ===== */
+function showCancelledUI(reason, timeText){
+  try{
+    const banner = document.querySelector('#cancelBanner');
+    if (banner){
+      let extra = [];
+      if (timeText) extra.push(timeText);
+      if (reason) extra.push(`原因：${reason}`);
+      banner.textContent = `⚠️ 本報價單已作廢${extra.length? '（' + extra.join('，') + '）' : ''}`;
+      banner.classList.remove('d-none');
+    }
+    document.body.classList.add('cancelled-watermark');
+  }catch(_){ /* noop */ }
+}
+
+function alertCancelledOnce(){
+  if (window.__ALERTED_CANCELLED__) return;
+  window.__ALERTED_CANCELLED__ = true;
+  try{ alert('⚠️ 注意：本報價單已作廢，僅供查看，請勿繼續操作。'); }catch(_){}
+}
+/* ===== end helpers ===== */
+
 /* =====================
    公用工具
 ===================== */
@@ -18,6 +41,24 @@ function toggle(el, show){ if (el) el.classList.toggle('d-none', !show); }
 // ========== Mobile bottom bar visibility helper（ChatGPT Patch） ==========
 function setMobileBottomBar(show){
   const bar = document.querySelector('.mobile-bottom-bar');
+  // === Injected: strengthen cancelled UI trigger ===
+  try {
+    const __cancelledStrong =
+      isCancelled ||
+      (Array.isArray(res.tags) && (res.tags.includes('CANCELLED') || res.tags.includes('CANCELED') || res.tags.includes('CANCEL'))) ||
+      (typeof ctx.status === 'string' && /cancel+ed?/i.test(ctx.status)) ||
+      (ctx.cancelled === true || ctx.isCancelled === true);
+
+    if (__cancelledStrong) {
+      const cancelInfo = (res && res.cancelInfo) || (ctx && ctx.cancelInfo) || {};
+      const reason = cancelInfo.reason || (ctx && ctx.reason) || '';
+      const timeText = cancelInfo.timeText || (ctx && ctx.cancelledAt) || '';
+      showCancelledUI(reason, timeText);
+      alertCancelledOnce();
+    }
+  } catch(__){ /* ignore */ }
+  // === End Injected ===
+
   if (!bar) return;
   // 以行為為主：show=false → 移除；show=true → 顯示（仍受 CSS @media 控制）
   bar.style.display = show ? '' : 'none';
@@ -352,10 +393,9 @@ function applyReadOnlyData(data){
     if (m) {
       const datePart = m[1];
       let [hour, minute] = m[3].split(":").map(Number);
-    let displayHour = hour % 12 || 12;
-    let displayTime = `${displayHour}:${String(minute).padStart(2, "0")}`;
-
-    const timePart = `${m[2] ? m[2] + ' ' : ''}${displayTime} 開始`;
+      let displayHour = hour % 12 || 12;
+      let displayTime = `${displayHour}:${String(minute).padStart(2, "0")}`;
+      const timePart = `${m[2] ? m[2] + ' ' : ''}${displayTime} 開始`;
       cf.innerHTML = `<span class="cf-date">${datePart}</span><span class="cf-time">${timePart}</span>`;
     } else {
       cf.textContent = s;
@@ -628,73 +668,75 @@ async function callCancel(reason) {
 }
 // ========== End Patch ==========
 
-// === Cancellation Warning Modal ===
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.__QUOTE_CANCELLED__) {
+    showCancelledUI(window.__QUOTE_CANCEL_REASON__ || '', window.__QUOTE_CANCEL_TIME__ || '');
+    alertCancelledOnce();
+  }
+});
+
+
+// === Cancellation Warning Modal (strict) ===
 (function(){
+  function normalize(v){ return (v||'').toString().trim().toLowerCase(); }
+  function getQuoteId(){
+    try { if (window.quote && (window.quote.id || window.quote.qid || window.quote.uuid)) return String(window.quote.id || window.quote.qid || window.quote.uuid); } catch(e){}
+    var metaId = document.querySelector('meta[name="quote:id"]');
+    if (metaId && metaId.content) return metaId.content;
+    try { var u = new URL(window.location.href); return u.searchParams.get('qid') || u.searchParams.get('quote_id') || u.searchParams.get('id') || null; } catch(e){}
+    return null;
+  }
+  function getExplicitStatus(){
+    try { if (window.quote && (window.quote.status || window.quote.state)) return normalize(window.quote.status || window.quote.state); } catch(e){}
+    if (typeof window.QUOTE_STATUS !== 'undefined') return normalize(window.QUOTE_STATUS);
+    var bodyStatus = (document.body && (document.body.dataset.quoteStatus || document.body.dataset.status));
+    if (bodyStatus) return normalize(bodyStatus);
+    var meta = document.querySelector('meta[name="quote:status"]');
+    if (meta && meta.content) return normalize(meta.content);
+    try { var u = new URL(window.location.href); var qs = u.searchParams.get('status'); if (qs) return normalize(qs); } catch(e){}
+    return '';
+  }
+  function detectCancelled(){
+    var s = getExplicitStatus();
+    if (s === 'cancelled' || s === 'canceled') return true;
+    if (!s || s === 'confirmed' || s === 'pending' || s === 'open' || s === 'active') return false;
+    return false;
+  }
   function getCancelReason(){
-    try {
-      if (window.quote && (window.quote.cancel_reason || window.quote.reason)) {
-        return String(window.quote.cancel_reason || window.quote.reason);
-      }
-    } catch(e){}
-    if (window.QUOTE_REASON) return String(window.QUOTE_REASON);
-    const meta = document.querySelector('meta[name="quote:reason"]');
+    try { if (window.quote && (window.quote.cancel_reason || window.quote.reason)) return String(window.quote.cancel_reason || window.quote.reason); } catch(e){}
+    if (typeof window.QUOTE_REASON !== 'undefined') return String(window.QUOTE_REASON);
+    var meta = document.querySelector('meta[name="quote:reason"]');
     if (meta && meta.content) return meta.content;
     return null;
   }
-
-  function detectCancelled(){
-    try {
-      if (window.QUOTE_STATUS && String(window.QUOTE_STATUS).toLowerCase() === 'cancelled') return true;
-      if (window.quote && (
-        window.quote.cancelled || window.quote.canceled ||
-        window.quote.is_cancelled || String(window.quote.status).toLowerCase() === 'cancelled'
-      )) return true;
-    } catch(e) {}
-    const bodyFlag = document.body && (document.body.dataset.cancelled === 'true' || document.body.dataset.canceled === 'true');
-    if (bodyFlag) return true;
-    const meta = document.querySelector('meta[name="quote:status"]');
-    if (meta && meta.content && meta.content.toLowerCase() === 'cancelled') return true;
-    const banner = document.getElementById('cancelBanner') || document.querySelector('.cancelled-banner, .is-cancelled, .alert-cancelled');
-    if (banner) return true;
+  function alreadyShownForThisQuote(){
+    var id = getQuoteId() || 'default';
+    var key = 'cancelModalShown:' + id;
+    if (sessionStorage.getItem(key)) return true;
+    sessionStorage.setItem(key, '1');
     return false;
   }
-
   function showCancellationModal(){
     const backdrop = document.createElement('div');
     backdrop.className = 'cancel-modal-backdrop';
     const reason = getCancelReason();
-
     backdrop.innerHTML = `
       <div class="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
         <header><span id="cancel-modal-title">⚠️ 注意</span><span class="badge">已作廢</span></header>
         <div class="body">本報價單已作廢，僅供查看用途。請勿再分享、修改或入帳使用。${reason ? ('<br><br><strong>原因：</strong>' + reason) : ''}</div>
-        <div class="actions">
-          <button class="btn" id="cancel-modal-more">查看說明</button>
-          <button class="btn primary" id="cancel-modal-ok">我知道了</button>
-        </div>
+        <div class="actions"><button class="btn primary" id="cancel-modal-ok">我知道了</button></div>
       </div>`;
-
     document.body.appendChild(backdrop);
-
     function close(){ if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop); }
-
     document.getElementById('cancel-modal-ok').addEventListener('click', close);
-    document.getElementById('cancel-modal-more').addEventListener('click', function(){
-      alert("此報價單已作廢。如需恢復或查詢詳細資訊，請聯繫管理員。");
-    });
     backdrop.addEventListener('click', function(e){ if (e.target === backdrop) close(); });
   }
-
   function maybeShow(){
-    if (detectCancelled()) {
-      showCancellationModal();
-    }
+    if (!detectCancelled()) return;
+    if (alreadyShownForThisQuote()) return;
+    showCancellationModal();
   }
-
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', maybeShow);
-  } else {
-    setTimeout(maybeShow, 0);
-  }
+  if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', maybeShow); } else { setTimeout(maybeShow, 0); }
 })();
-// === End Cancellation Warning Modal ===
+// === End Cancellation Warning Modal (strict) ===
+
