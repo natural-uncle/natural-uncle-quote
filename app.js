@@ -15,6 +15,15 @@ function addClass(el, c){ if (el) el.classList.add(c); }
 function removeClass(el, c){ if (el) el.classList.remove(c); }
 function toggle(el, show){ if (el) el.classList.toggle('d-none', !show); }
 
+// ========== Mobile bottom bar visibility helper（ChatGPT Patch） ==========
+function setMobileBottomBar(show){
+  const bar = document.querySelector('.mobile-bottom-bar');
+  if (!bar) return;
+  // 以行為為主：show=false → 移除；show=true → 顯示（仍受 CSS @media 控制）
+  bar.style.display = show ? '' : 'none';
+}
+// ========== End helper ==========
+
 function wantShowCancel(){ return true; }
 
 
@@ -503,7 +512,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
       applyCancelStatus(payload);
       setupCancelButtonsVisibility(payload);
-      applyReadOnlyData(data); 
+      
+  // ChatGPT Patch: hide mobile action bar on cancelled or confirmed & archived (locked)
+  try{
+    const res = extractResource(payload) || {};
+    const ctx = (res.context && res.context.custom) || {};
+    const isCancelled = (Array.isArray(res.tags) && res.tags.includes('cancelled')) || (ctx.status === 'cancelled');
+    const isLocked = (ctx.locked === '1' || ctx.locked === 1 || payload.locked === true);
+    setMobileBottomBar(!(isCancelled || isLocked));
+  }catch(_){ /* ignore */ }
+applyReadOnlyData(data); 
       applyMobileLabels();
       setReadonlyButtonsVisibility(!locked);
 
@@ -554,6 +572,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // 無 cid：編輯模式
   updateTotals(); applyMobileLabels();
+  try{ setMobileBottomBar(true); }catch(_){}
 })();
 
 
