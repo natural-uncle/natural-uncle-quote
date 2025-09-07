@@ -454,8 +454,10 @@ function applyCancelStatus(payload){
         removeClass(banner, "d-none");
         const reason = resource?.context?.custom?.cancel_reason || "";
         const time = resource?.context?.custom?.cancel_time || "";
-        banner.textContent = `⚠️ 本報價單已作廢${time ? `（${new Date(time).toLocaleString()}）` : ""}${reason ? `，原因：${reason}` : ""}`;
-      }
+        
+      window.QUOTE_STATUS = 'cancelled'; window.QUOTE_REASON = reason; window.QUOTE_CANCEL_TIME = time;banner.textContent = `⚠️ 本報價單已作廢${time ? `（${new Date(time).toLocaleString()}）` : ""}${reason ? `，原因：${reason}` : ""}`;
+      try{ if (typeof window.__cancelModalShow === 'function') window.__cancelModalShow(); }catch(_){/*noop*/}
+    }
       // 無論是否 admin，都隱藏「我同意」
       addClass(qs("#confirmBtnDesktop"), "d-none");
       addClass(qs("#confirmBtnMobile"), "d-none");
