@@ -171,27 +171,6 @@ html, body { overflow-x: hidden; }
   .confirm-modal .btn.primary{background:#198754;color:#fff;border-color:#198754;}
   .confirm-modal .badge{display:inline-block;background:#198754;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;margin-left:6px;}
 </style>
-
-<style>
-/* === Mobile: make cancel button clearer and higher contrast === */
-@media (max-width: 576px){
-  #cancelBtnMobile{
-    background-color:#dc3545 !important;
-    border-color:#dc3545 !important;
-    color:#fff !important;
-    font-weight:800;
-    letter-spacing:0.2px;
-  }
-  #cancelBtnMobile:focus-visible{
-    box-shadow:0 0 0 0.2rem rgba(220,53,69,.4);
-  }
-  /* ensure comfortable tap targets */
-  #shareLinkBtnMobile, #cancelBtnMobile, #confirmBtnMobile{
-    min-height:44px;
-  }
-}
-</style>
-
 </head>
 <body>
 <div id="cancelBanner" class="d-none">⚠️ 本報價單已作廢</div>
@@ -359,9 +338,13 @@ html, body { overflow-x: hidden; }
               </div>
             </div>
 
+            
+            <div class="text-muted mb-2" id="bankMeta">
+              銀行：台新銀行（812）　戶名：林宥騰
+            </div>
             <div class="input-group">
-              <input type="text" class="form-control form-control-lg" id="bankAccount"
-                     value="銀行：台新銀行（812）　帳號：28881000063784　戶名：林宥騰"
+              <input type="text" class="form-control form-control-lg" id="bankAccount" inputmode="numeric" aria-label="匯款帳號（僅數字，可複製）"
+                     value="28881000063784"
                      readonly>
               <button class="btn btn-primary" id="copyAccountBtn" type="button">📋 複製帳號</button>
             </div>
