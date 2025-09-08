@@ -259,9 +259,20 @@ html, body { overflow-x: hidden; }
     font-size: 17px;
   }
 }
+</style><style>
+/* === Fix: ensure button row visible and share button full-width === */
+.mobile-bottom-bar .buttons-row{
+  display: flex;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mobile-bottom-bar .action-share{
+  flex: 1 1 0;
+}
 </style></head>
 <body>
-<div class="d-none" id="cancelBanner">⚠️ 本報價單已作廢</div>
+<div class="d-none" id="cancelBanner"⚠️ 本報價單已作廢</div>
 <div class="container-quote">
 <div class="text-center">
 <img alt="自然大叔 Logo" class="logo" src="https://res.cloudinary.com/dijzndzw2/image/upload/v1756944900/2_oufdld.png"/>
@@ -462,7 +473,7 @@ html, body { overflow-x: hidden; }
 <!-- 手機底部固定工具列：只保留「產生連結」 -->
 <div class="mobile-bottom-bar d-md-none">
 <div class="total-strong"><span class="label">合計：</span><br/><span class="amount"><span id="totalMobile">0</span> 元</span></div>
-<div class="d-flex gap-2 flex-grow-1">
+<div class="d-flex gap-2 buttons-row flex-grow-1">
 <button aria-label="產生報價單連結" class="btn action-btn action-share flex-fill" id="shareLinkBtnMobile">
           產生連結
         </button>
@@ -487,22 +498,71 @@ html, body { overflow-x: hidden; }
     var n = parseFloat(t || '0');
     return isNaN(n) ? 0 : n;
   }
+  function hasEdited() {
+    return !!window.__hasEditedQuote__ || getTotal() > 0;
+  }
+  function isReadOnly() {
+    var fields = Array.prototype.slice.call(document.querySelectorAll('input, select, textarea'));
+    if (fields.length === 0) return false; // 沒有輸入欄位無法判別，當作非唯讀
+    var anyEditable = fields.some(function(el){
+      return !el.disabled && !el.readOnly;
+    });
+    return !anyEditable;
+  }
+  function isPendingStatus() {
+    var statusEl = document.querySelector('[data-quote-status], #quoteStatus, input[name="quoteStatus"]');
+    var statusTxt = "";
+    if (statusEl) {
+      statusTxt = (statusEl.dataset && statusEl.dataset.quoteStatus) || statusEl.value || statusEl.textContent || "";
+      statusTxt = (statusTxt + "").toLowerCase();
+    }
+    // 包含常見「待確認」字樣或 pending
+    if (statusTxt.indexOf('pending') >= 0 || statusTxt.indexOf('待確認') >= 0 || statusTxt.indexOf('待确认') >= 0) {
+      return true;
+    }
+    // 後備：唯讀且頁面上存在確認按鈕的 DOM
+    return isReadOnly() && !!document.getElementById('confirmBtnMobile');
+  }
   function toggleBar() {
     var bar = document.querySelector('.mobile-bottom-bar');
-    if (!bar) return;
-    if (isMobile() && getTotal() === 0 && !window.__hasEditedQuote__) {
-      bar.classList.add('d-none');
-    } else {
+    if (!bar || !isMobile()) return;
+    var shareBtn = document.getElementById('shareLinkBtnMobile');
+    var cancelBtn = document.getElementById('cancelBtnMobile');
+    var confirmBtn = document.getElementById('confirmBtnMobile');
+
+    // 預設：不強制更動，保留原本 class
+    function show(el){ if (el) el.classList.remove('d-none'); }
+    function hide(el){ if (el) el.classList.add('d-none'); }
+
+    if (isPendingStatus()) {
+      // 唯讀待確認：顯示取消/同意，隱藏分享
       bar.classList.remove('d-none');
+      hide(shareBtn);
+      show(cancelBtn);
+      show(confirmBtn);
+      return;
     }
+
+    if (!hasEdited()) {
+      // 尚未編輯：只顯示分享
+      bar.classList.remove('d-none');
+      show(shareBtn);
+      hide(cancelBtn);
+      hide(confirmBtn);
+      return;
+    }
+
+    // 其他狀態：不介入（交由原有程式控制）
   }
-  // 監聽金額節點變化
+
+  // 監聽金額變更
   var totalEl = document.getElementById('totalMobile');
   if (totalEl && 'MutationObserver' in window) {
     var obs = new MutationObserver(toggleBar);
     obs.observe(totalEl, { childList: true, characterData: true, subtree: true });
   }
-  // 監聽所有輸入的變動
+
+  // 監聽輸入動作（視為已編輯）
   function markEdited() {
     window.__hasEditedQuote__ = true;
     toggleBar();
@@ -513,7 +573,6 @@ html, body { overflow-x: hidden; }
   // 初始化
   window.addEventListener('resize', toggleBar);
   document.addEventListener('DOMContentLoaded', toggleBar);
-  // 若此腳本在 DOMContentLoaded 之後注入，保險呼叫一次
   toggleBar();
 })();
 </script></body>
