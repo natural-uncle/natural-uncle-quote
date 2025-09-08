@@ -171,6 +171,27 @@ html, body { overflow-x: hidden; }
   .confirm-modal .btn.primary{background:#198754;color:#fff;border-color:#198754;}
   .confirm-modal .badge{display:inline-block;background:#198754;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;margin-left:6px;}
 </style>
+
+<style>
+/* === Mobile: make cancel button clearer and higher contrast === */
+@media (max-width: 576px){
+  #cancelBtnMobile{
+    background-color:#dc3545 !important;
+    border-color:#dc3545 !important;
+    color:#fff !important;
+    font-weight:800;
+    letter-spacing:0.2px;
+  }
+  #cancelBtnMobile:focus-visible{
+    box-shadow:0 0 0 0.2rem rgba(220,53,69,.4);
+  }
+  /* ensure comfortable tap targets */
+  #shareLinkBtnMobile, #cancelBtnMobile, #confirmBtnMobile{
+    min-height:44px;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="cancelBanner" class="d-none">⚠️ 本報價單已作廢</div>
