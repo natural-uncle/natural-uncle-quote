@@ -6,7 +6,7 @@
 <title>自然大叔 線上報價單</title>
 <link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <style>
 /* 讓完整預約時間在手機自動斷成兩行：日期一行、時間一行 */
 #cleanFull .cf-date,
@@ -169,7 +169,7 @@ html, body { overflow-x: hidden; }
   .confirm-modal .btn.primary{background:#198754;color:#fff;border-color:#198754;}
   .confirm-modal .badge{display:inline-block;background:#198754;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;margin-left:6px;}
 </style>
-</link><style>
+<style>
 /* === Mobile bottom bar — emphasized action buttons === */
 :root{
   --mbb-btn-radius: 14px;
@@ -232,6 +232,31 @@ html, body { overflow-x: hidden; }
 @media (max-width: 360px){
   .mobile-bottom-bar .action-btn{
     font-size: 15px;
+  }
+}
+</style><style>
+/* === Mobile bottom bar — total as two lines === */
+.mobile-bottom-bar{
+  align-items: stretch;
+}
+.mobile-bottom-bar .total-strong{
+  line-height: 1.1;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 86px;          /* 避免擠壓 */
+}
+.mobile-bottom-bar .total-strong .label{
+  font-size: 12px;
+  opacity: 0.85;
+}
+.mobile-bottom-bar .total-strong .amount{
+  font-size: 18px;
+  font-weight: 800;
+}
+@media (max-width: 360px){
+  .mobile-bottom-bar .total-strong .amount{
+    font-size: 17px;
   }
 }
 </style></head>
@@ -435,9 +460,8 @@ html, body { overflow-x: hidden; }
 <div class="link-box d-none" id="shareLinkBox"></div>
 </div>
 <!-- 手機底部固定工具列：只保留「產生連結」 -->
-
 <div class="mobile-bottom-bar d-md-none">
-<div class="total-strong">合計：<span id="totalMobile">0</span> 元</div>
+<div class="total-strong"><span class="label">合計：</span><br/><span class="amount"><span id="totalMobile">0</span> 元</span></div>
 <div class="d-flex gap-2 flex-grow-1">
 <button aria-label="產生報價單連結" class="btn action-btn action-share flex-fill" id="shareLinkBtnMobile">
           產生連結
@@ -450,9 +474,47 @@ html, body { overflow-x: hidden; }
         </button>
 </div>
 </div>
-
 <div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
 <!-- 外部 JS：避免 CSP 擋下 inline -->
 <script defer="" src="app.js"></script>
-</body>
+<script>
+(function() {
+  function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
+  function getTotal() {
+    var el = document.getElementById('totalMobile');
+    if (!el) return 0;
+    var t = (el.textContent || '').replace(/[^0-9.]/g, '');
+    var n = parseFloat(t || '0');
+    return isNaN(n) ? 0 : n;
+  }
+  function toggleBar() {
+    var bar = document.querySelector('.mobile-bottom-bar');
+    if (!bar) return;
+    if (isMobile() && getTotal() === 0 && !window.__hasEditedQuote__) {
+      bar.classList.add('d-none');
+    } else {
+      bar.classList.remove('d-none');
+    }
+  }
+  // 監聽金額節點變化
+  var totalEl = document.getElementById('totalMobile');
+  if (totalEl && 'MutationObserver' in window) {
+    var obs = new MutationObserver(toggleBar);
+    obs.observe(totalEl, { childList: true, characterData: true, subtree: true });
+  }
+  // 監聽所有輸入的變動
+  function markEdited() {
+    window.__hasEditedQuote__ = true;
+    toggleBar();
+  }
+  document.addEventListener('input', markEdited, { passive: true });
+  document.addEventListener('change', markEdited, { passive: true });
+
+  // 初始化
+  window.addEventListener('resize', toggleBar);
+  document.addEventListener('DOMContentLoaded', toggleBar);
+  // 若此腳本在 DOMContentLoaded 之後注入，保險呼叫一次
+  toggleBar();
+})();
+</script></body>
 </html>
