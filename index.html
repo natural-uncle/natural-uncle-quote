@@ -490,19 +490,28 @@ html, body { overflow-x: hidden; }
   function toggleBar() {
     var bar = document.querySelector('.mobile-bottom-bar');
     if (!bar) return;
+    var cancelBtn = document.getElementById('cancelBtnMobile');
+    var confirmBtn = document.getElementById('confirmBtnMobile');
+
     if (isMobile() && getTotal() === 0 && !window.__hasEditedQuote__) {
+      // 尚未編輯：整個行動列隱藏
       bar.classList.add('d-none');
     } else {
+      // 已編輯或 total>0：顯示行動列，但僅保留「產生連結」按鈕
       bar.classList.remove('d-none');
+      if (cancelBtn) cancelBtn.classList.add('d-none');
+      if (confirmBtn) confirmBtn.classList.add('d-none');
     }
   }
+
   // 監聽金額節點變化
   var totalEl = document.getElementById('totalMobile');
   if (totalEl && 'MutationObserver' in window) {
     var obs = new MutationObserver(toggleBar);
     obs.observe(totalEl, { childList: true, characterData: true, subtree: true });
   }
-  // 監聽所有輸入的變動
+
+  // 監聽輸入動作（視為已編輯）
   function markEdited() {
     window.__hasEditedQuote__ = true;
     toggleBar();
@@ -513,7 +522,6 @@ html, body { overflow-x: hidden; }
   // 初始化
   window.addEventListener('resize', toggleBar);
   document.addEventListener('DOMContentLoaded', toggleBar);
-  // 若此腳本在 DOMContentLoaded 之後注入，保險呼叫一次
   toggleBar();
 })();
 </script></body>
