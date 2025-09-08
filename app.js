@@ -520,7 +520,7 @@ document.addEventListener('click', function(e){
     const acct = qs('#bankAccount');
     if (!acct) return;
     try{
-      navigator.clipboard.writeText(acct.value).then(function(){
+      navigator.clipboard.writeText(((acct.value.match(/\d+/g)||[]).join(''))).then(function(){
         const orig = t.textContent;
         t.textContent = '✅ 已複製';
         setTimeout(function(){ t.textContent = orig; }, 1200);
