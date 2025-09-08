@@ -259,6 +259,17 @@ html, body { overflow-x: hidden; }
     font-size: 17px;
   }
 }
+</style><style>
+/* === Fix: ensure button row visible and share button full-width === */
+.mobile-bottom-bar .buttons-row{
+  display: flex;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mobile-bottom-bar .action-share{
+  flex: 1 1 0;
+}
 </style></head>
 <body>
 <div class="d-none" id="cancelBanner">⚠️ 本報價單已作廢</div>
@@ -462,7 +473,7 @@ html, body { overflow-x: hidden; }
 <!-- 手機底部固定工具列：只保留「產生連結」 -->
 <div class="mobile-bottom-bar d-md-none">
 <div class="total-strong"><span class="label">合計：</span><br/><span class="amount"><span id="totalMobile">0</span> 元</span></div>
-<div class="d-flex gap-2 flex-grow-1">
+<div class="d-flex gap-2 buttons-row flex-grow-1">
 <button aria-label="產生報價單連結" class="btn action-btn action-share flex-fill" id="shareLinkBtnMobile">
           產生連結
         </button>
@@ -492,15 +503,24 @@ html, body { overflow-x: hidden; }
     if (!bar) return;
     var cancelBtn = document.getElementById('cancelBtnMobile');
     var confirmBtn = document.getElementById('confirmBtnMobile');
+    var shareBtn = document.getElementById('shareLinkBtnMobile');
 
     if (isMobile() && getTotal() === 0 && !window.__hasEditedQuote__) {
       // 尚未編輯：整個行動列隱藏
       bar.classList.add('d-none');
     } else {
-      // 已編輯或 total>0：顯示行動列，但僅保留「產生連結」按鈕
+      // 已編輯或 total>0：顯示行動列，只保留分享按鈕
       bar.classList.remove('d-none');
       if (cancelBtn) cancelBtn.classList.add('d-none');
       if (confirmBtn) confirmBtn.classList.add('d-none');
+      if (shareBtn) {
+        shareBtn.classList.remove('d-none');
+        // 若被其它狀態類別隱藏，清除常見隱藏類別
+        shareBtn.classList.remove('disabled');
+        shareBtn.removeAttribute('disabled');
+        shareBtn.style.display = '';
+        shareBtn.style.visibility = '';
+      }
     }
   }
 
