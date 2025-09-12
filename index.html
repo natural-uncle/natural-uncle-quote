@@ -145,7 +145,7 @@ body .mobile-bottom-bar .btn-danger{
 
 /* ===== 手機行動列（全新設計，僅手機顯示） ===== */
 @media (max-width: 576px){
-  [data-mobilebar].mobile-bottom-bar{
+  [data-mobilebar].mobile-bottom-bar{ display:block !important;
     position: fixed; left: 0; right: 0; bottom: 0;
     padding: 10px calc(14px + env(safe-area-inset-right))
              calc(10px + env(safe-area-inset-bottom))
@@ -176,7 +176,7 @@ body .mobile-bottom-bar .btn-danger{
   /* 文字顯眼 */
   [data-mobilebar] .mbb-txt{ letter-spacing:.02em; }
   /* 舊行動列若存在，隱藏其原樣式容器以免重疊（僅手機） */
-  .mobile-bottom-bar:not([data-mobilebar]){ display:none !important; }
+  
 }
 /* 桌機與平板：隱藏新的行動列 */
 @media (min-width: 577px){
