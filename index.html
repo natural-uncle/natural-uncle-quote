@@ -183,6 +183,14 @@ body .mobile-bottom-bar .btn-danger{
   [data-mobilebar].mobile-bottom-bar{ display: none !important; }
 }
 
+
+/* 強制顯示新版行動列，即使被套上 d-none 或 inline display:none */
+@media (max-width: 576px){
+  [data-mobilebar].mobile-bottom-bar{ display:block !important; }
+  [data-mobilebar].mobile-bottom-bar.d-none{ display:block !important; }
+  [data-mobilebar].mobile-bottom-bar[style*="display: none"]{ display:block !important; }
+}
+
 </style><style>
 /* === Mobile bottom bar — total as two lines === */
 .mobile-bottom-bar{
@@ -559,5 +567,21 @@ body .mobile-bottom-bar .btn-danger{
   // 若此腳本在 DOMContentLoaded 之後插入，立即執行一次
   applyMobileBarLogic();
 })();
-</script></body>
+</script>
+<script>
+(function(){
+  function ensureMobileBar(){
+    var bar = document.querySelector('[data-mobilebar].mobile-bottom-bar');
+    if(!bar) return;
+    bar.classList.remove('d-none');
+    bar.style.display = 'block';
+  }
+  // run early and late to survive app.js toggles
+  ensureMobileBar();
+  document.addEventListener('DOMContentLoaded', ensureMobileBar);
+  window.addEventListener('load', ensureMobileBar);
+})();
+</script>
+
+</body>
 </html>
