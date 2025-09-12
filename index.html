@@ -2,6 +2,7 @@
 
 <html lang="zh-TW">
 <head>
+  <!-- build: 2025-09-12T14:25:08 -->
 <meta charset="utf-8"/>
 <title>自然大叔 線上報價單</title>
 <link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png"/>
@@ -127,6 +128,20 @@ html, body { overflow-x: hidden; }
 
 /* 只作用於官方網站按鈕圖示 */
 [aria-label="前往自然大叔官方網站"] img{ width:22px; height:22px; object-fit:contain; }
+
+/* 保護手機行動列（高權重 + 明確色碼） */
+body .mobile-bottom-bar .btn{ background-image:none !important; filter:none !important; }
+body .mobile-bottom-bar .btn img{ filter:none !important; }
+body .mobile-bottom-bar .btn-primary{
+  background-color:#0d6efd !important; border-color:#0d6efd !important; color:#fff !important;
+}
+body .mobile-bottom-bar .btn-success{
+  background-color:#198754 !important; border-color:#198754 !important; color:#fff !important;
+}
+body .mobile-bottom-bar .btn-danger{
+  background-color:#dc3545 !important; border-color:#dc3545 !important; color:#fff !important;
+}
+
 </style><style>
 /* === Mobile bottom bar — total as two lines === */
 .mobile-bottom-bar{
