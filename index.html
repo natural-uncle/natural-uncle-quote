@@ -2,7 +2,6 @@
 
 <html lang="zh-TW">
 <head>
-<!-- build: 2025-09-12T14:25:08 -->
 <meta charset="utf-8"/>
 <title>自然大叔 線上報價單</title>
 <link href="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" rel="icon" type="image/png"/>
@@ -117,104 +116,124 @@ html, body { overflow-x: hidden; }
       100%{ box-shadow: 0 0 0 18px rgba(13,110,253,0); }
     }
     
-
-  /* 官方網站按鈕的圖示尺寸 */
-  .contact-site-btn img { width:22px; height:22px; object-fit:contain; vertical-align:middle; }
-
-
-
-
-
-
-/* 只作用於官方網站按鈕圖示 */
-[aria-label="前往自然大叔官方網站"] img{ width:22px; height:22px; object-fit:contain; }
-
-/* 保護手機行動列（高權重 + 明確色碼） */
-body .mobile-bottom-bar .btn{ background-image:none !important; filter:none !important; }
-body .mobile-bottom-bar .btn img{ filter:none !important; }
-body .mobile-bottom-bar .btn-primary{
-  background-color:#0d6efd !important; border-color:#0d6efd !important; color:#fff !important;
-}
-body .mobile-bottom-bar .btn-success{
-  background-color:#198754 !important; border-color:#198754 !important; color:#fff !important;
-}
-body .mobile-bottom-bar .btn-danger{
-  background-color:#dc3545 !important; border-color:#dc3545 !important; color:#fff !important;
-}
-
-
-/* ===== 手機行動列（全新設計，僅手機顯示） ===== */
-@media (max-width: 576px){
-  [data-mobilebar].mobile-bottom-bar{ display:block !important;
-    position: fixed; left: 0; right: 0; bottom: 0;
-    padding: 10px calc(14px + env(safe-area-inset-right))
-             calc(10px + env(safe-area-inset-bottom))
-             calc(14px + env(safe-area-inset-left));
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(0,0,0,.06);
-    z-index: 9999;
-  }
-  [data-mobilebar] .mbb-wrap{
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  }
-  [data-mobilebar] .mbb-btn{
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 12px 10px; border-radius: 9999px; text-decoration: none;
-    font-weight: 800; font-size: 15px; line-height: 1;
-    color: #fff; border: 1px solid transparent;
-    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+</style>
+<style>
+  /* 已作廢視覺加強 */
+  #cancelBanner {
+    position: relative;
+    margin: 12px 0 16px;
+    padding: 14px 18px;
+    border-radius: .75rem;
+    background: #fde7e9;
+    border: 1px solid #f3b6bc;
+    color: #b3202a;
+    font-weight: 700;
     text-align: center;
   }
-  [data-mobilebar] .mbb-btn:active{ transform: translateY(1px); }
-  [data-mobilebar] .mbb-ico-img{ width:20px; height:20px; object-fit:contain; }
-  /* 色彩：各自獨立，避免影響其他按鈕 */
-  [data-mobilebar] .mbb-line{ background-color:#06C755; }
-  [data-mobilebar] .mbb-site{ background-image: linear-gradient(90deg, #FE7200, #FE8E01); }
-  [data-mobilebar] .mbb-fb{ background-color:#1877F2; }
-  /* 文字顯眼 */
-  [data-mobilebar] .mbb-txt{ letter-spacing:.02em; }
-  /* 舊行動列若存在，隱藏其原樣式容器以免重疊（僅手機） */
-  
-}
-/* 桌機與平板：隱藏新的行動列 */
-@media (min-width: 577px){
-  [data-mobilebar].mobile-bottom-bar{ display: none !important; }
-}
-
-
-/* ===== Mobile Action Bar — New, JS-Independent ===== */
-@media (max-width: 576px){
-  .mobilebar-new[data-mobilebar]{
-    position: fixed; left: 0; right: 0; bottom: 0;
-    padding: 10px calc(14px + env(safe-area-inset-right))
-             calc(10px + env(safe-area-inset-bottom))
-             calc(14px + env(safe-area-inset-left));
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(0,0,0,.06);
-    z-index: 2147483647; /* above everything */
-    display: block !important;
+  /* 浮水印：全域狀態 */
+  .cancelled-watermark {
+    position: relative;
   }
-  .mobilebar-new .mbb-wrap{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .mobilebar-new .mbb-btn{
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    padding:12px 10px; border-radius:9999px; text-decoration:none;
-    font-weight:800; font-size:15px; line-height:1; text-align:center;
-    color:#fff; border:1px solid transparent; box-shadow:0 6px 16px rgba(0,0,0,.12);
+  .cancelled-watermark::after {
+    content: "已作廢";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    font-size: clamp(64px, 12vw, 140px);
+    color: rgba(179, 32, 42, 0.12);
+    font-weight: 800;
+    letter-spacing: .2em;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
   }
-  .mobilebar-new .mbb-btn:active{ transform: translateY(1px); }
-  .mobilebar-new .mbb-ico-img{ width:20px; height:20px; object-fit:contain; }
-  .mobilebar-new .mbb-line{ background-color:#06C755; }
-  .mobilebar-new .mbb-site{ background-image: linear-gradient(90deg,#FE7200,#FE8E01); }
-  .mobilebar-new .mbb-fb{ background-color:#1877F2; }
-}
-@media (min-width: 577px){
-  .mobilebar-new[data-mobilebar]{ display:none !important; }
+</style>
+<style id="cancel-modal-style">
+  .cancel-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:2147483000;}
+  .cancel-modal{background:#fff;max-width:520px;width:90%;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.2);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+  .cancel-modal header{background:#ffe5e5;padding:14px 18px;font-weight:700;color:#7a1f1f;font-size:18px;display:flex;gap:8px;align-items:center;}
+  .cancel-modal .body{padding:18px;color:#333;line-height:1.6;font-size:16px;}
+  .cancel-modal .actions{display:flex;gap:10px;justify-content:flex-end;padding:0 18px 18px;}
+  .cancel-modal .btn{padding:10px 14px;border-radius:10px;border:1px solid #ccc;background:#f8f8f8;cursor:pointer;font-size:14px;}
+  .cancel-modal .btn.primary{background:#d32f2f;color:#fff;border-color:#d32f2f;}
+  .cancel-modal .badge{display:inline-block;background:#d32f2f;color:#fff;border-radius:999px;padding:4px 12px;font-size:16px;margin-left:6px;}
+</style>
+<style id="confirm-modal-style">
+  .confirm-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:2147483001;}
+  .confirm-modal{background:#fff;max-width:520px;width:90%;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.2);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+  .confirm-modal header{background:#e6f4ea;padding:14px 18px;font-weight:700;color:#0f5132;font-size:18px;display:flex;gap:8px;align-items:center;}
+  .confirm-modal .body{padding:18px;color:#333;line-height:1.6;font-size:16px;}
+  .confirm-modal .actions{display:flex;gap:10px;justify-content:flex-end;padding:0 18px 18px;}
+  .confirm-modal .btn{padding:10px 14px;border-radius:10px;border:1px solid #ccc;background:#f8f8f8;cursor:pointer;font-size:14px;}
+  .confirm-modal .btn.primary{background:#198754;color:#fff;border-color:#198754;}
+  .confirm-modal .badge{display:inline-block;background:#198754;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;margin-left:6px;}
+</style>
+<style>
+/* === Mobile bottom bar — emphasized action buttons === */
+:root{
+  --mbb-btn-radius: 14px;
 }
 
+.mobile-bottom-bar{
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  gap: 12px;
+}
+
+.mobile-bottom-bar .action-btn{
+  flex: 1 1 0;
+  height: 56px;
+  min-height: 56px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  border-radius: var(--mbb-btn-radius);
+  border-width: 2px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.mobile-bottom-bar .action-share{
+  background: #212529;
+  color: #fff;
+  border-color: #212529;
+}
+
+.mobile-bottom-bar .action-cancel{
+  background: #dc3545;
+  color: #fff;
+  border-color: #dc3545;
+}
+
+.mobile-bottom-bar .action-confirm{
+  background: #198754;
+  color: #fff;
+  border-color: #198754;
+}
+
+.mobile-bottom-bar .action-btn:hover{
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.mobile-bottom-bar .action-btn:active{
+  transform: translateY(0);
+  filter: brightness(.98);
+}
+
+.mobile-bottom-bar .action-btn:focus-visible{
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0,0,0,.35);
+}
+
+@media (max-width: 360px){
+  .mobile-bottom-bar .action-btn{
+    font-size: 15px;
+  }
+}
 </style><style>
 /* === Mobile bottom bar — total as two lines === */
 .mobile-bottom-bar{
@@ -438,6 +457,7 @@ body .mobile-bottom-bar .btn-danger{
 <a class="btn btn-success" href="https://lin.ee/OHk6Rn7" target="_blank">🟢 LINE 官方帳號</a>
 <a aria-label="前往自然大叔官方網站" class="btn contact-site-btn d-inline-flex align-items-center justify-content-center" href="https://uncleofficialwebsite.netlify.app/" rel="noopener" style="background: linear-gradient(90deg, #FE7200, #FE8E01); color:#fff; border:none;" target="_blank"><img alt="自然大叔 LOGO" class="me-2" height="22" src="https://res.cloudinary.com/dijzndzw2/image/upload/v1757176751/logo-3_hddq08.png" width="22"/>官方網站</a>
 <a class="btn btn-primary" href="https://www.facebook.com/naturaluncle" target="_blank">🔵 Facebook 粉絲專頁</a>
+
 </div>
 </div>
 </div>
@@ -453,6 +473,20 @@ body .mobile-bottom-bar .btn-danger{
 <div class="link-box d-none" id="shareLinkBox"></div>
 </div>
 <!-- 手機底部固定工具列：只保留「產生連結」 -->
+<div class="mobile-bottom-bar d-md-none">
+<div class="total-strong"><span class="label">合計：</span><br/><span class="amount"><span id="totalMobile">0</span> 元</span></div>
+<div class="d-flex gap-2 buttons-row flex-grow-1">
+<button aria-label="產生報價單連結" class="btn action-btn action-share flex-fill" id="shareLinkBtnMobile">
+          產生連結
+        </button>
+<button aria-label="取消或作廢本報價單" class="btn action-btn action-cancel flex-fill d-none" id="cancelBtnMobile">
+          取消/作廢
+        </button>
+<button aria-label="我同意此報價" class="btn action-btn action-confirm flex-fill d-none" id="confirmBtnMobile">
+          我同意此報價
+        </button>
+</div>
+</div>
 <div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
 <!-- 外部 JS：避免 CSP 擋下 inline -->
 <script defer="" src="app.js"></script>
