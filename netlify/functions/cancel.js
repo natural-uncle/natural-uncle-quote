@@ -4,45 +4,6 @@ import crypto from "crypto";
 const RTYPES = ["raw","image","video"];
 const DTYPES = ["upload","authenticated","private"];
 
-
-// === Brevo transactional email ===
-async function sendCancelEmailBrevo({ id, reason, who, meta }) {
-  const apiKey = process.env.BREVO_API_KEY;
-  const to = process.env.NOTIFY_TO;
-  const toName = process.env.NOTIFY_TO_NAME || "";
-  const from = process.env.NOTIFY_FROM || "no-reply@example.com";
-  const fromName = process.env.NOTIFY_FROM_NAME || "Notifier";
-  if (!apiKey || !to) return;
-
-  const payload = {
-    sender: { email: from, name: fromName },
-    to: [{ email: to, name: toName }],
-    subject: `取消/作廢通知：${id}`,
-    htmlContent: `
-      <h2>取消/作廢通知</h2>
-      <p><b>ID：</b>${id}</p>
-      <p><b>原因：</b>${reason || "(未填寫)"}</p>
-      ${who ? `<p><b>操作人：</b>${who}</p>` : ""}
-      ${meta ? `<pre style="white-space:pre-wrap">${JSON.stringify(meta,null,2)}</pre>` : ""}
-      <p>時間：${new Date().toISOString()}</p>
-    `,
-  };
-
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": "application/json",
-      "accept": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    console.error("Brevo email failed", res.status, t);
-  }
-}
-
 export async function handler(event){
   try{
     if(event.httpMethod!=="POST") return json(405,{error:"Method Not Allowed"});
@@ -81,10 +42,8 @@ export async function handler(event){
         body: JSON.stringify({ tags: tags.join(",") })
       });
       const txt = await r.text();
-      if(!r.ok) return json(502,{error:"Failed to update tags (raw)", status:r.status, response:txt});
+      if(!r.ok){ try{ await sendCancelEmailBrevo({ id, reason, who: (body.user||body.email||""), meta:{ step:"raw_tags", status:r.status, response: (function(){try{return JSON.parse(txt)}catch{return txt}})() } }); }catch(e){ console.error(e); } return json(200,{ ok:false, id:meta.public_id, resource_type:"raw", warn:"cloudinary_tags_failed", status:r.status, response: (function(){try{return JSON.parse(txt)}catch{return txt}})() }); }
       let parsed=null; try{parsed=JSON.parse(txt);}catch{}
-  try { await sendCancelEmailBrevo({ id, reason, who: (body.user||body.email||""), meta: { resource: found?.public_id, rtype: found?.resource_type } }); } catch(e){ console.error(e); }
-
       return json(200,{ok:true, id:meta.public_id, resource_type:"raw", tags, raw:parsed||txt});
     }
 
@@ -113,7 +72,7 @@ export async function handler(event){
     const url = `https://api.cloudinary.com/v1_1/${cloud}/${meta.resource_type}/context`;
     const r = await fetch(url,{method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:form.toString()});
     const txt = await r.text();
-    if(!r.ok) return json(502,{error:"Failed to update context (Upload API)", status:r.status, response:txt});
+    if(!r.ok){ try{ await sendCancelEmailBrevo({ id, reason, who: (body.user||body.email||""), meta:{ step:"upload_context", status:r.status, response: (function(){try{return JSON.parse(txt)}catch{return txt}})() } }); }catch(e){ console.error(e); } return json(200,{ ok:false, id:meta.public_id, resource_type:meta.resource_type, warn:"cloudinary_context_failed", status:r.status, response: (function(){try{return JSON.parse(txt)}catch{return txt}})() }); }
     let parsed=null; try{parsed=JSON.parse(txt);}catch{}
     return json(200,{ok:true, id:meta.public_id, resource_type:meta.resource_type, context:contextData, raw:parsed||txt});
 
