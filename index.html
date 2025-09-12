@@ -142,6 +142,47 @@ body .mobile-bottom-bar .btn-danger{
   background-color:#dc3545 !important; border-color:#dc3545 !important; color:#fff !important;
 }
 
+
+/* ===== 手機行動列（全新設計，僅手機顯示） ===== */
+@media (max-width: 576px){
+  [data-mobilebar].mobile-bottom-bar{
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 10px calc(14px + env(safe-area-inset-right))
+             calc(10px + env(safe-area-inset-bottom))
+             calc(14px + env(safe-area-inset-left));
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(0,0,0,.06);
+    z-index: 9999;
+  }
+  [data-mobilebar] .mbb-wrap{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  [data-mobilebar] .mbb-btn{
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 10px; border-radius: 9999px; text-decoration: none;
+    font-weight: 800; font-size: 15px; line-height: 1;
+    color: #fff; border: 1px solid transparent;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    text-align: center;
+  }
+  [data-mobilebar] .mbb-btn:active{ transform: translateY(1px); }
+  [data-mobilebar] .mbb-ico-img{ width:20px; height:20px; object-fit:contain; }
+  /* 色彩：各自獨立，避免影響其他按鈕 */
+  [data-mobilebar] .mbb-line{ background-color:#06C755; }
+  [data-mobilebar] .mbb-site{ background-image: linear-gradient(90deg, #FE7200, #FE8E01); }
+  [data-mobilebar] .mbb-fb{ background-color:#1877F2; }
+  /* 文字顯眼 */
+  [data-mobilebar] .mbb-txt{ letter-spacing:.02em; }
+  /* 舊行動列若存在，隱藏其原樣式容器以免重疊（僅手機） */
+  .mobile-bottom-bar:not([data-mobilebar]){ display:none !important; }
+}
+/* 桌機與平板：隱藏新的行動列 */
+@media (min-width: 577px){
+  [data-mobilebar].mobile-bottom-bar{ display: none !important; }
+}
+
 </style><style>
 /* === Mobile bottom bar — total as two lines === */
 .mobile-bottom-bar{
