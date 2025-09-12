@@ -184,11 +184,35 @@ body .mobile-bottom-bar .btn-danger{
 }
 
 
-/* 強制顯示新版行動列，即使被套上 d-none 或 inline display:none */
+/* ===== Mobile Action Bar — New, JS-Independent ===== */
 @media (max-width: 576px){
-  [data-mobilebar].mobile-bottom-bar{ display:block !important; }
-  [data-mobilebar].mobile-bottom-bar.d-none{ display:block !important; }
-  [data-mobilebar].mobile-bottom-bar[style*="display: none"]{ display:block !important; }
+  .mobilebar-new[data-mobilebar]{
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 10px calc(14px + env(safe-area-inset-right))
+             calc(10px + env(safe-area-inset-bottom))
+             calc(14px + env(safe-area-inset-left));
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(0,0,0,.06);
+    z-index: 2147483647; /* above everything */
+    display: block !important;
+  }
+  .mobilebar-new .mbb-wrap{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mobilebar-new .mbb-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 10px; border-radius:9999px; text-decoration:none;
+    font-weight:800; font-size:15px; line-height:1; text-align:center;
+    color:#fff; border:1px solid transparent; box-shadow:0 6px 16px rgba(0,0,0,.12);
+  }
+  .mobilebar-new .mbb-btn:active{ transform: translateY(1px); }
+  .mobilebar-new .mbb-ico-img{ width:20px; height:20px; object-fit:contain; }
+  .mobilebar-new .mbb-line{ background-color:#06C755; }
+  .mobilebar-new .mbb-site{ background-image: linear-gradient(90deg,#FE7200,#FE8E01); }
+  .mobilebar-new .mbb-fb{ background-color:#1877F2; }
+}
+@media (min-width: 577px){
+  .mobilebar-new[data-mobilebar]{ display:none !important; }
 }
 
 </style><style>
@@ -429,7 +453,6 @@ body .mobile-bottom-bar .btn-danger{
 <div class="link-box d-none" id="shareLinkBox"></div>
 </div>
 <!-- 手機底部固定工具列：只保留「產生連結」 -->
-
 <div class="footer-bar"><small>© 2025 自然大叔 All Rights Reserved</small></div>
 <!-- 外部 JS：避免 CSP 擋下 inline -->
 <script defer="" src="app.js"></script>
@@ -567,21 +590,5 @@ body .mobile-bottom-bar .btn-danger{
   // 若此腳本在 DOMContentLoaded 之後插入，立即執行一次
   applyMobileBarLogic();
 })();
-</script>
-<script>
-(function(){
-  function ensureMobileBar(){
-    var bar = document.querySelector('[data-mobilebar].mobile-bottom-bar');
-    if(!bar) return;
-    bar.classList.remove('d-none');
-    bar.style.display = 'block';
-  }
-  // run early and late to survive app.js toggles
-  ensureMobileBar();
-  document.addEventListener('DOMContentLoaded', ensureMobileBar);
-  window.addEventListener('load', ensureMobileBar);
-})();
-</script>
-
-</body>
+</script></body>
 </html>
