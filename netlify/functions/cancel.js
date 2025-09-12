@@ -1,4 +1,4 @@
-// netlify/functions/cancel.js (v5 - raw ç¨ tags, image/video ç¨ context)
+// netlify/functions/cancel.js (v5 - raw 用 tags, image/video 用 context)
 import crypto from "crypto";
 
 const RTYPES = ["raw","image","video"];
@@ -7,41 +7,6 @@ const DTYPES = ["upload","authenticated","private"];
 
 // === Brevo transactional email ===
 async function sendCancelEmailBrevo({ id, reason, who, meta }) {
-  // Support the same env names as confirm.js for consistency
-  const apiKey = process.env.BREVO_API_KEY;
-  const to = process.env.NOTIFY_TO || process.env.EMAIL_TO || process.env.TO_EMAIL;
-  const toName = process.env.NOTIFY_TO_NAME || "";
-  const from = process.env.NOTIFY_FROM || process.env.EMAIL_FROM || process.env.FROM_EMAIL || "no-reply@example.com";
-  const fromName = process.env.NOTIFY_FROM_NAME || process.env.EMAIL_SENDER_NAME || process.env.SENDER_NAME || "Notifier";
-  const subjectPrefix = process.env.EMAIL_SUBJECT_PREFIX || "";
-  if (!apiKey || !to) return;
-
-  const payload = {
-    sender: { email: from, name: fromName },
-    to: [{ email: to, name: toName }],
-    subject: `${subjectPrefix ? subjectPrefix + " " : ""}取消/作廢通知：${id}`,
-    htmlContent: `
-      <h2>取消/作廢通知</h2>
-      <p><b>ID：</b>${id}</p>
-      <p><b>原因：</b>${reason || "(未填寫)"}</p>
-      ${who ? `<p><b>操作人：</b>${who}</p>` : ""}
-      ${meta ? `<pre style="white-space:pre-wrap">${JSON.stringify(meta,null,2)}</pre>` : ""}
-      <p>時間：${new Date().toISOString()}</p>
-    `,
-  };
-
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: { "api-key": apiKey, "Content-Type": "application/json", "accept": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const t = await (async ()=>{ try{ return await res.text(); }catch{ return ""; }})();
-    console.error("Brevo email failed", res.status, t);
-  }
-}
-) {
   const apiKey = process.env.BREVO_API_KEY;
   const to = process.env.NOTIFY_TO;
   const toName = process.env.NOTIFY_TO_NAME || "";
@@ -52,14 +17,14 @@ async function sendCancelEmailBrevo({ id, reason, who, meta }) {
   const payload = {
     sender: { email: from, name: fromName },
     to: [{ email: to, name: toName }],
-    subject: `åæ¶/ä½å»¢éç¥ï¼${id}`,
+    subject: `取消/作廢通知：${id}`,
     htmlContent: `
-      <h2>åæ¶/ä½å»¢éç¥</h2>
-      <p><b>IDï¼</b>${id}</p>
-      <p><b>åå ï¼</b>${reason || "(æªå¡«å¯«)"}</p>
-      ${who ? `<p><b>æä½äººï¼</b>${who}</p>` : ""}
+      <h2>取消/作廢通知</h2>
+      <p><b>ID：</b>${id}</p>
+      <p><b>原因：</b>${reason || "(未填寫)"}</p>
+      ${who ? `<p><b>操作人：</b>${who}</p>` : ""}
       ${meta ? `<pre style="white-space:pre-wrap">${JSON.stringify(meta,null,2)}</pre>` : ""}
-      <p>æéï¼${new Date().toISOString()}</p>
+      <p>時間：${new Date().toISOString()}</p>
     `,
   };
 
@@ -99,7 +64,7 @@ export async function handler(event){
 
     const nowISO = new Date().toISOString();
 
-    // === RAW æªæ¡ â ç¨ tags ===
+    // === RAW 檔案 → 用 tags ===
     if(meta.resource_type==="raw"){
       const auth = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
       const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/raw/upload/${encodeURIComponent(meta.public_id)}`;
@@ -123,7 +88,7 @@ export async function handler(event){
       return json(200,{ok:true, id:meta.public_id, resource_type:"raw", tags, raw:parsed||txt});
     }
 
-    // === IMAGE / VIDEO â ç¨ Upload API context ===
+    // === IMAGE / VIDEO → 用 Upload API context ===
     const contextData = {
       locked:"1",
       status:"cancelled",
