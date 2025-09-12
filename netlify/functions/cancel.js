@@ -1,0 +1,202 @@
+// netlify/functions/cancel.js (v5 - raw ç¨ tags, image/video ç¨ context)
+import crypto from "crypto";
+
+const RTYPES = ["raw","image","video"];
+const DTYPES = ["upload","authenticated","private"];
+
+
+// === Brevo transactional email ===
+async function sendCancelEmailBrevo({ id, reason, who, meta }) {
+  // Support the same env names as confirm.js for consistency
+  const apiKey = process.env.BREVO_API_KEY;
+  const to = process.env.NOTIFY_TO || process.env.EMAIL_TO || process.env.TO_EMAIL;
+  const toName = process.env.NOTIFY_TO_NAME || "";
+  const from = process.env.NOTIFY_FROM || process.env.EMAIL_FROM || process.env.FROM_EMAIL || "no-reply@example.com";
+  const fromName = process.env.NOTIFY_FROM_NAME || process.env.EMAIL_SENDER_NAME || process.env.SENDER_NAME || "Notifier";
+  const subjectPrefix = process.env.EMAIL_SUBJECT_PREFIX || "";
+  if (!apiKey || !to) return;
+
+  const payload = {
+    sender: { email: from, name: fromName },
+    to: [{ email: to, name: toName }],
+    subject: `${subjectPrefix ? subjectPrefix + " " : ""}取消/作廢通知：${id}`,
+    htmlContent: `
+      <h2>取消/作廢通知</h2>
+      <p><b>ID：</b>${id}</p>
+      <p><b>原因：</b>${reason || "(未填寫)"}</p>
+      ${who ? `<p><b>操作人：</b>${who}</p>` : ""}
+      ${meta ? `<pre style="white-space:pre-wrap">${JSON.stringify(meta,null,2)}</pre>` : ""}
+      <p>時間：${new Date().toISOString()}</p>
+    `,
+  };
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": apiKey, "Content-Type": "application/json", "accept": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const t = await (async ()=>{ try{ return await res.text(); }catch{ return ""; }})();
+    console.error("Brevo email failed", res.status, t);
+  }
+}
+) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const to = process.env.NOTIFY_TO;
+  const toName = process.env.NOTIFY_TO_NAME || "";
+  const from = process.env.NOTIFY_FROM || "no-reply@example.com";
+  const fromName = process.env.NOTIFY_FROM_NAME || "Notifier";
+  if (!apiKey || !to) return;
+
+  const payload = {
+    sender: { email: from, name: fromName },
+    to: [{ email: to, name: toName }],
+    subject: `åæ¶/ä½å»¢éç¥ï¼${id}`,
+    htmlContent: `
+      <h2>åæ¶/ä½å»¢éç¥</h2>
+      <p><b>IDï¼</b>${id}</p>
+      <p><b>åå ï¼</b>${reason || "(æªå¡«å¯«)"}</p>
+      ${who ? `<p><b>æä½äººï¼</b>${who}</p>` : ""}
+      ${meta ? `<pre style="white-space:pre-wrap">${JSON.stringify(meta,null,2)}</pre>` : ""}
+      <p>æéï¼${new Date().toISOString()}</p>
+    `,
+  };
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      "accept": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    console.error("Brevo email failed", res.status, t);
+  }
+}
+
+export async function handler(event){
+  try{
+    if(event.httpMethod!=="POST") return json(405,{error:"Method Not Allowed"});
+    const body = JSON.parse(event.body||"{}");
+    let id = (body.id||"").trim();
+    const reason = String(body.reason||"").slice(0,500);
+    if(!id) return json(400,{error:"Missing id"});
+
+    const cloud = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if(!cloud || !apiKey || !apiSecret){
+      return json(500,{error:"Missing Cloudinary env"});
+    }
+
+    id = normalizeId(id);
+    const meta = await findResourceMeta(cloud, apiKey, apiSecret, id);
+    if(!meta) return json(404,{error:"Resource not found", id});
+
+    const nowISO = new Date().toISOString();
+
+    // === RAW æªæ¡ â ç¨ tags ===
+    if(meta.resource_type==="raw"){
+      const auth = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+      const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/raw/upload/${encodeURIComponent(meta.public_id)}`;
+      const tags = [
+        "locked",
+        "cancelled",
+        `cancel_time_${nowISO}`,
+      ];
+      if(reason) tags.push(`cancel_reason_${sanitize(reason)}`);
+
+      const r = await fetch(url, {
+        method:"POST",
+        headers:{ Authorization: auth, "Content-Type":"application/json" },
+        body: JSON.stringify({ tags: tags.join(",") })
+      });
+      const txt = await r.text();
+      if(!r.ok) return json(502,{error:"Failed to update tags (raw)", status:r.status, response:txt});
+      let parsed=null; try{parsed=JSON.parse(txt);}catch{}
+  try { await sendCancelEmailBrevo({ id, reason, who: (body.user||body.email||""), meta: { resource: found?.public_id, rtype: found?.resource_type } }); } catch(e){ console.error(e); }
+
+      return json(200,{ok:true, id:meta.public_id, resource_type:"raw", tags, raw:parsed||txt});
+    }
+
+    // === IMAGE / VIDEO â ç¨ Upload API context ===
+    const contextData = {
+      locked:"1",
+      status:"cancelled",
+      cancel_reason: reason,
+      cancel_time: nowISO
+    };
+    const contextKV = Object.entries(contextData)
+      .map(([k,v])=>`${k}=${String(v).replace(/\|/g,"/")}`).join("|");
+    const timestamp = Math.floor(Date.now()/1000);
+    const paramsToSign = {
+      command:"add", context:contextKV, "public_ids[]": meta.public_id, timestamp:String(timestamp)
+    };
+    const signature = signParams(paramsToSign, apiSecret);
+    const form = new URLSearchParams();
+    form.append("command","add");
+    form.append("context",contextKV);
+    form.append("public_ids[]",meta.public_id);
+    form.append("timestamp",String(timestamp));
+    form.append("api_key",apiKey);
+    form.append("signature",signature);
+
+    const url = `https://api.cloudinary.com/v1_1/${cloud}/${meta.resource_type}/context`;
+    const r = await fetch(url,{method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:form.toString()});
+    const txt = await r.text();
+    if(!r.ok) return json(502,{error:"Failed to update context (Upload API)", status:r.status, response:txt});
+    let parsed=null; try{parsed=JSON.parse(txt);}catch{}
+    return json(200,{ok:true, id:meta.public_id, resource_type:meta.resource_type, context:contextData, raw:parsed||txt});
+
+  }catch(e){
+    return json(500,{error:String(e?.message||e)});
+  }
+}
+
+function signParams(params, apiSecret){
+  const entries = Object.entries(params)
+    .filter(([k,v])=>v!==undefined && v!==null && v!=="")
+    .sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([k,v])=>`${k}=${v}`)
+    .join("&");
+  const toSign = entries+apiSecret;
+  return crypto.createHash("sha1").update(toSign).digest("hex");
+}
+
+function sanitize(s){
+  return s.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,50);
+}
+
+function normalizeId(id){
+  try{id=decodeURIComponent(id);}catch{}
+  return id.replace(/^#+/,"").replace(/[?#].*$/,"").replace(/\.(json|txt|bin|pdf|xml|csv|yaml|yml)$/i,"");
+}
+
+async function findResourceMeta(cloud, apiKey, apiSecret, id){
+  const auth = "Basic " + Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+  for(const rtype of RTYPES){
+    for(const dtype of DTYPES){
+      const url = `https://api.cloudinary.com/v1_1/${cloud}/resources/${rtype}/${dtype}/${encodeURIComponent(id)}`;
+      const r = await fetch(url,{headers:{Authorization:auth}});
+      if(r.status===404) continue;
+      if(!r.ok) continue;
+      const j=await r.json();
+      if(j&&j.public_id) return {resource_type:j.resource_type, public_id:j.public_id};
+    }
+  }
+  // fallback search
+  const s=await fetch(`https://api.cloudinary.com/v1_1/${cloud}/resources/search`,{
+    method:"POST", headers:{Authorization:auth,"Content-Type":"application/json"},
+    body:JSON.stringify({expression:`public_id="${id}" OR public_id="quotes/${id}"`,max_results:1})
+  });
+  if(!s.ok) return null;
+  const js=await s.json();
+  const hit=(js.resources||[])[0];
+  return hit?{resource_type:hit.resource_type, public_id:hit.public_id}:null;
+}
+
+function json(status,obj){return{statusCode:status,headers:{"Content-Type":"application/json"},body:JSON.stringify(obj)};}
